@@ -1,0 +1,13 @@
+﻿@model JanSamadhan.Models.User
+<h2>My Profile</h2>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">@Model.Name</h5>
+        <p class="card-text">Email: @Model.Email</p>
+        <p class="card-text">Points: <strong>@Model.Points</strong></p>
+        <p class="card-text">Badge: <span class="badge bg-primary">@Model.BadgeLevel</span></p>
+    </div>
+    <div class="card-footer">
+        <a class="btn btn-outline-primary" href="/Complaint">View My Complaints</a>
+    </div>
+</div>

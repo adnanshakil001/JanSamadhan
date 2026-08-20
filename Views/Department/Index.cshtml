@@ -1,0 +1,164 @@
+﻿@model IEnumerable<JanSamadhan.Models.Complaint>
+@{
+    ViewData["Title"] = "Department Queue";
+}
+
+<h2>@ViewBag.DepartmentName - Department Queue</h2>
+
+<div class="row mb-3">
+    <div class="col">
+        <div class="card text-bg-danger"><div class="card-body">Pending: @ViewBag.TotalPending</div></div>
+    </div>
+    <div class="col">
+        <div class="card text-bg-warning"><div class="card-body">In Progress: @ViewBag.TotalInProgress</div></div>
+    </div>
+    <div class="col">
+        <div class="card text-bg-success"><div class="card-body">Fixed: @ViewBag.TotalFixed</div></div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Created</th>
+                <th>User</th>
+                <th>Type</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                var statusClass = c.Status == JanSamadhan.Models.ComplaintStatus.Pending ? "pending" : c.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "inprogress" : "fixed";
+                <tr>
+                    <td>@c.CreatedAt.ToLocalTime().ToString("g")</td>
+                    <td>@c.User?.Name</td>
+                    <td>@c.ProblemType</td>
+                    <td>@c.Address</td>
+                    <td><span class="badge status-badge @statusClass">@c.Status</span></td>
+                    <td>@c.AssignedToUser?.Name</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="@Url.Action("Details", "Complaint", new { id = c.ComplaintId })" class="btn btn-sm btn-outline-primary">View</a>
+                            @if (c.Status == JanSamadhan.Models.ComplaintStatus.Pending)
+                            {
+                                <button class="btn btn-sm btn-warning" onclick="updateStatus(@c.ComplaintId, 1)">Mark In Progress</button>
+                            }
+                            @if (c.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
+                            {
+                                <button class="btn btn-sm btn-success" onclick="updateStatus(@c.ComplaintId, 2)">Mark Fixed</button>
+                            }
+                            <button class="btn btn-sm btn-info" onclick="assignComplaint(@c.ComplaintId)">Assign</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Assignment Modal -->
+<div class="modal fade" id="assignmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Complaint</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignmentForm">
+                    <input type="hidden" id="assignmentComplaintId" />
+                    <div class="mb-3">
+                        <label class="form-label">Assigned To</label>
+                        <select class="form-select" id="assignedToUserId">
+                            <option value="">Select Technician</option>
+                            <!-- Options will be loaded via AJAX -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" id="assignmentNote" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAssignment()">Assign</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        loadTechnicians();
+    });
+
+    function updateStatus(complaintId, status) {
+        $.post('/Department/UpdateStatus', { id: complaintId, status: status })
+            .done(function() {
+                location.reload();
+            });
+    }
+
+    function assignComplaint(complaintId) {
+        $('#assignmentComplaintId').val(complaintId);
+        $('#assignmentModal').modal('show');
+    }
+
+    function loadTechnicians() {
+        // This would typically load from an API endpoint
+        // For now, we'll use static data
+        const technicians = [
+            { id: 1, name: 'John Smith' },
+            { id: 2, name: 'Jane Doe' },
+            { id: 3, name: 'Mike Johnson' }
+        ];
+        
+        const select = $('#assignedToUserId');
+        technicians.forEach(tech => {
+            select.append(`<option value="${tech.id}">${tech.name}</option>`);
+        });
+    }
+
+    function submitAssignment() {
+        const formData = {
+            id: $('#assignmentComplaintId').val(),
+            assignedToUserId: $('#assignedToUserId').val() || null,
+            note: $('#assignmentNote').val()
+        };
+        
+        $.post('/Department/Assign', formData)
+            .done(function() {
+                $('#assignmentModal').modal('hide');
+                location.reload();
+            });
+    }
+</script>
+
+<style>
+.status-badge {
+    font-size: 0.8em;
+}
+
+.status-badge.pending {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.status-badge.inprogress {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.status-badge.fixed {
+    background-color: #28a745;
+    color: #fff;
+}
+</style>
+}

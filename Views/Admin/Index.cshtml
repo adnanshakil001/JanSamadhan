@@ -1,0 +1,220 @@
+﻿@model IEnumerable<JanSamadhan.Models.Complaint>
+<h2>All Complaints</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+<div class="row mb-3">
+    <div class="col">
+        <div class="card text-bg-danger"><div class="card-body">Pending: @ViewBag.TotalPending</div></div>
+    </div>
+    <div class="col">
+        <div class="card text-bg-warning"><div class="card-body">In Progress: @ViewBag.TotalInProgress</div></div>
+    </div>
+    <div class="col">
+        <div class="card text-bg-success"><div class="card-body">Fixed: @ViewBag.TotalFixed</div></div>
+    </div>
+</div>
+
+<!-- Advanced Filter Panel -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6>Filters & Search</h6>
+    </div>
+    <div class="card-body">
+        <form method="get" action="/Admin" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="status">
+                    <option value="">All</option>
+                    <option value="Pending" selected="@(ViewBag.Status == "Pending")">Pending</option>
+                    <option value="InProgress" selected="@(ViewBag.Status == "InProgress")">In Progress</option>
+                    <option value="Fixed" selected="@(ViewBag.Status == "Fixed")">Fixed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Department</label>
+                <select class="form-select" name="departmentId">
+                    <option value="">All</option>
+                    @foreach (var dept in ViewBag.Departments)
+                    {
+                        <option value="@dept.DepartmentId" selected="@(ViewBag.DepartmentId == dept.DepartmentId)">@dept.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Assigned To</label>
+                <select class="form-select" name="assignedToUserId">
+                    <option value="">All</option>
+                    @foreach (var user in ViewBag.Users)
+                    {
+                        <option value="@user.UserId" selected="@(ViewBag.AssignedToUserId == user.UserId)">@user.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" name="q" value="@ViewBag.Q" placeholder="Search complaints...">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="/Admin" class="btn btn-outline-secondary">Reset</a>
+                <a href="/Admin/Scoreboard" class="btn btn-outline-info">Scoreboard</a>
+                <a href="/Role" class="btn btn-outline-warning">Manage Roles</a>
+                <a href="/Admin/TechnicianScoreboard" class="btn btn-outline-success">Technician Board</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Export Options -->
+<div class="mb-3 d-flex justify-content-between align-items-center">
+    <div>
+        <span class="text-muted">Showing @((ViewBag.CurrentPage - 1) * ViewBag.PageSize + 1) to @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalCount)) of @ViewBag.TotalCount complaints</span>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            Export
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "csv" })">Export as CSV</a></li>
+            <li><a class="dropdown-item" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "excel" })">Export as Excel</a></li>
+            <li><a class="dropdown-item" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "pdf" })">Export as PDF</a></li>
+        </ul>
+    </div>
+</div>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>
+                <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "CreatedAt", sortOrder = ViewBag.SortBy == "CreatedAt" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none">
+                    Created @if (ViewBag.SortBy == "CreatedAt") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
+                </a>
+            </th>
+            <th>
+                <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "Username", sortOrder = ViewBag.SortBy == "Username" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none">
+                    User @if (ViewBag.SortBy == "Username") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
+                </a>
+            </th>
+            <th>
+                <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "ProblemType", sortOrder = ViewBag.SortBy == "ProblemType" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none">
+                    Type @if (ViewBag.SortBy == "ProblemType") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
+                </a>
+            </th>
+            <th>Address</th>
+            <th>
+                <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "Status", sortOrder = ViewBag.SortBy == "Status" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none">
+                    Status @if (ViewBag.SortBy == "Status") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
+                </a>
+            </th>
+            <th>Department</th>
+            <th>User Role</th>
+            <th>Photo</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var c in Model)
+        {
+            <tr>
+                <td>@c.CreatedAt.ToLocalTime().ToString("g")</td>
+                <td>@c.User?.Name</td>
+                <td>@c.ProblemType</td>
+                <td>@c.Address</td>
+                <td><span class="badge status-badge @(c.Status.ToString().ToLower())">@c.Status</span></td>
+                <td>@c.Department?.Name</td>
+                <td>
+                    <span class="badge role-badge @(c.User?.Role?.ToLower() ?? "user")">@c.User?.Role</span>
+                </td>
+                <td>
+                    @if (!string.IsNullOrEmpty(c.PhotoPath))
+                    {
+                        <a href="@c.PhotoPath" target="_blank">View</a>
+                    }
+                </td>
+                <td>
+                    <div class="d-flex flex-column gap-1">
+                        <a href="@Url.Action("Details", "Admin", new { id = c.ComplaintId })" class="btn btn-sm btn-outline-primary">View Details</a>
+                        <form method="post" asp-action="UpdateStatus" asp-controller="Admin" class="d-flex gap-1">
+                            <input type="hidden" name="id" value="@c.ComplaintId" />
+                            <select class="form-select form-select-sm" name="status">
+                                @if (c.Status == JanSamadhan.Models.ComplaintStatus.Pending)
+                                {
+                                    <option value="0" selected>Pending</option>
+                                    <option value="1">In Progress</option>
+                                    <option value="2">Fixed</option>
+                                }
+                                else if (c.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
+                                {
+                                    <option value="1" selected>In Progress</option>
+                                    <option value="2">Fixed</option>
+                                }
+                                else if (c.Status == JanSamadhan.Models.ComplaintStatus.Fixed)
+                                {
+                                    <option value="2" selected>Fixed</option>
+                                    <option disabled>No further changes allowed</option>
+                                }
+                            </select>
+                            <button class="btn btn-sm btn-primary" type="submit" @(c.Status == JanSamadhan.Models.ComplaintStatus.Fixed ? "disabled" : "")>Update</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Pagination -->
+@if (ViewBag.TotalPages > 1)
+{
+    <nav aria-label="Complaints pagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = ViewBag.CurrentPage - 1 })">Previous</a>
+            </li>
+            
+            @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
+            {
+                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = i })">@i</a>
+                </li>
+            }
+            
+            <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = ViewBag.CurrentPage + 1 })">Next</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+<style>
+.role-badge {
+    font-size: 0.8em;
+}
+
+.role-badge.user {
+    background-color: #6c757d;
+}
+
+.role-badge.admin {
+    background-color: #dc3545;
+}
+
+.role-badge.departmentmanager {
+    background-color: #fd7e14;
+}
+
+.role-badge.technician {
+    background-color: #17a2b8;
+}
+
+.role-badge.moderator {
+    background-color: #28a745;
+}
+</style>
+
+

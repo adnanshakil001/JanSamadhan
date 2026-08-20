@@ -1,0 +1,23 @@
+@{
+    ViewData["Title"] = "Login";
+}
+<h2>Login</h2>
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input class="form-control" type="password" name="password" required />
+    </div>
+    <button class="btn btn-primary" type="submit">Login</button>
+    <a class="btn btn-link" href="/Account/Register">Register</a>
+    <a class="btn btn-outline-info" href="/Account/TechnicianLogin">Technician Login</a>
+</form>
+@foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+{
+    <div class="text-danger">@err.ErrorMessage</div>
+}
+
+

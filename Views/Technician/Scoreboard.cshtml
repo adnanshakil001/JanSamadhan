@@ -1,0 +1,88 @@
+@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "Technician Scoreboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Technician Scoreboard</h2>
+    <div>
+        <a href="/Technician/Dashboard" class="btn btn-outline-primary">Dashboard</a>
+        <a href="/Account/Logout" class="btn btn-outline-danger">Logout</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Completed Tasks</th>
+                        <th>Pending Tasks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int rank = 1;
+                    }
+                    @foreach (var technician in Model)
+                    {
+                        <tr>
+                            <td>
+                                @if (rank == 1)
+                                {
+                                    <i class="fas fa-trophy text-warning"></i>
+                                }
+                                else if (rank == 2)
+                                {
+                                    <i class="fas fa-medal text-secondary"></i>
+                                }
+                                else if (rank == 3)
+                                {
+                                    <i class="fas fa-award text-warning"></i>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">#@rank</span>
+                                }
+                            </td>
+                            <td>
+                                <strong>@technician.Name</strong>
+                                @if (rank <= 3)
+                                {
+                                    <span class="badge bg-primary ms-1">Top @rank</span>
+                                }
+                            </td>
+                            <td>@technician.Email</td>
+                            <td>
+                                <span class="badge bg-info">@technician.DepartmentName</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">@technician.CompletedTasks</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">@technician.PendingTasks</span>
+                            </td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body text-center">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Technicians Found</h5>
+            <p class="text-muted">There are currently no technicians in the system.</p>
+        </div>
+    </div>
+}

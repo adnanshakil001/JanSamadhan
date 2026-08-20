@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Create Technician";
+}
+
+<h2>Create New Technician</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" asp-action="CreateTechnician">
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input class="form-control" type="text" name="name" required />
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input class="form-control" type="email" name="email" required />
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input class="form-control" type="password" name="password" required />
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Department</label>
+                <select class="form-select" name="departmentId" required>
+                    <option value="">Select Department</option>
+                    @foreach (var dept in ViewBag.Departments)
+                    {
+                        <option value="@dept.DepartmentId">@dept.Name</option>
+                    }
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <button class="btn btn-primary" type="submit">Create Technician</button>
+                <a class="btn btn-secondary" href="/Role">Back to Role Management</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "New Complaint";
+}
+<h2>Report a Problem</h2>
+<form method="post" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Problem Type</label>
+                <select class="form-select" name="problemType" id="problemType" required>
+                    <option value="">-- Select --</option>
+                    <option data-department="Public Works">Pothole</option>
+                    <option data-department="Public Works">Streetlight</option>
+                    <option data-department="Utilities">Water Disposal</option>
+                    <option data-department="Traffic Management">Traffic Signal</option>
+                    <option data-department="Utilities">Sewer Lids</option>
+                    <option data-department="Public Works">Bridges</option>
+                </select>
+            </div>
+            <div class="mb-3" id="departmentInfo" style="display: none;">
+                <div class="alert alert-info">
+                    <strong>Assigned Department:</strong> <span id="assignedDepartment"></span>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" name="description" rows="4"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Photo</label>
+                <input class="form-control" type="file" name="photo" accept="image/*" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Address</label>
+                <input class="form-control" type="text" id="address" name="address" />
+            </div>
+            <input type="hidden" id="latitude" name="latitude" />
+            <input type="hidden" id="longitude" name="longitude" />
+            <button class="btn btn-primary" type="submit">Submit</button>
+        </div>
+        <div class="col-md-6">
+            <div id="map" style="height: 400px; border: 1px solid #ccc;"></div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    const map = L.map('map').setView([20, 78], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = null;
+    function setMarker(lat, lng) {
+        if (marker) { map.removeLayer(marker); }
+        marker = L.marker([lat, lng]).addTo(map);
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('address').value = d.display_name || '';
+            }).catch(() => {});
+    }
+
+    map.on('click', function (e) {
+        setMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(p => {
+            const lat = p.coords.latitude;
+            const lng = p.coords.longitude;
+            map.setView([lat, lng], 15);
+            setMarker(lat, lng);
+        });
+    }
+
+    // Show assigned department when problem type is selected
+    $('#problemType').change(function() {
+        const selectedOption = $(this).find('option:selected');
+        const department = selectedOption.data('department');
+        
+        if (department) {
+            $('#assignedDepartment').text(department);
+            $('#departmentInfo').show();
+        } else {
+            $('#departmentInfo').hide();
+        }
+    });
+</script>
+}
+
+

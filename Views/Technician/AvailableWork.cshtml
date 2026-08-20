@@ -1,0 +1,78 @@
+﻿@model IEnumerable<JanSamadhan.Models.Complaint>
+@{
+    ViewData["Title"] = "Available Work";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Available Work</h2>
+    <div>
+        <a href="/Technician/Dashboard" class="btn btn-outline-primary">My Dashboard</a>
+        <a href="/Account/Logout" class="btn btn-outline-danger">Logout</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(ViewBag.Message))
+{
+    <div class="alert alert-warning" role="alert">
+        @ViewBag.Message
+    </div>
+}
+else
+{
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        Showing available work for <strong>@ViewBag.TechnicianDepartment</strong> department
+    </div>
+}
+
+@if (Model.Any())
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Complaint ID</th>
+                            <th>Problem Type</th>
+                            <th>Description</th>
+                            <th>Location</th>
+                            <th>Reported By</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var complaint in Model)
+                        {
+                            <tr>
+                                <td>#@complaint.ComplaintId</td>
+                                <td>@complaint.ProblemType</td>
+                                <td>@(complaint.Description?.Length > 50 ? complaint.Description.Substring(0, 50) + "..." : complaint.Description)</td>
+                                <td>@complaint.Address</td>
+                                <td>@complaint.User?.Name</td>
+                                <td>@complaint.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <a href="@Url.Action("Details", new { id = complaint.ComplaintId })" class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center">
+            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Available Work</h5>
+            <p class="text-muted">There are currently no pending complaints in your department that need assignment.</p>
+            <a href="/Technician/Dashboard" class="btn btn-primary">Back to Dashboard</a>
+        </div>
+    </div>
+}

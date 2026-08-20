@@ -1,0 +1,14 @@
+﻿@model JanSamadhan.Models.Admin
+<h2>Admin Profile</h2>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">@Model.Name</h5>
+        <p class="card-text">Email: @Model.Email</p>
+        <p class="card-text">Role: <span class="badge bg-danger">Admin</span></p>
+        <p class="card-text">Admin ID: @Model.AdminId</p>
+    </div>
+    <div class="card-footer">
+        <a class="btn btn-outline-primary" href="/Admin">Admin Dashboard</a>
+        <a class="btn btn-outline-secondary" href="/Role">Manage Roles</a>
+    </div>
+</div>

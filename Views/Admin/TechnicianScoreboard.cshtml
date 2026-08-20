@@ -1,0 +1,75 @@
+@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "Technician Scoreboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Technician Scoreboard</h2>
+    <div>
+        <a href="/Admin/Scoreboard" class="btn btn-outline-primary">User Scoreboard</a>
+        <a href="/Admin/TechnicianScoreboard" class="btn btn-primary">Technician Scoreboard</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Completed Tasks</th>
+                        <th>Pending Tasks</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int rank = 1;
+                    }
+                    @foreach (var tech in Model)
+                    {
+                        var performance = tech.CompletedTasks + tech.PendingTasks > 0 
+                            ? Math.Round((double)tech.CompletedTasks / (tech.CompletedTasks + tech.PendingTasks) * 100, 1)
+                            : 0;
+                        
+                        <tr>
+                            <td>@rank</td>
+                            <td>@tech.Name</td>
+                            <td>@tech.Email</td>
+                            <td>
+                                <span class="badge bg-info">@tech.DepartmentName</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">@tech.CompletedTasks</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">@tech.PendingTasks</span>
+                            </td>
+                            <td>
+                                <div class="progress" style="width: 100px;">
+                                    <div class="progress-bar" role="progressbar" style="width: @performance%" 
+                                         aria-valuenow="@performance" aria-valuemin="0" aria-valuemax="100">
+                                        @performance%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        <h4>No Technicians Found</h4>
+        <p>There are no technicians in the system yet.</p>
+    </div>
+}

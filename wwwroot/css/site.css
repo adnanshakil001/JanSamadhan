@@ -1,0 +1,33 @@
+body { padding-bottom: 40px; }
+.status-badge { color: #fff; }
+.status-badge.pending { background: #dc3545; }
+.status-badge.inprogress { background: #fd7e14; }
+.status-badge.fixed { background: #28a745; }
+
+/* Star Rating Styles */
+.rating .star {
+    font-size: 24px;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+    user-select: none;
+}
+
+.rating .star:hover {
+    color: #ffc107;
+}
+
+.rating .star.filled {
+    color: #ffc107;
+}
+
+.rating-display .star {
+    font-size: 20px;
+    color: #ddd;
+}
+
+.rating-display .star.filled {
+    color: #ffc107;
+}
+
+

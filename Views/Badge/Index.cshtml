@@ -1,0 +1,17 @@
+﻿@model IEnumerable<JanSamadhan.Models.Badge>
+<h2>Badges</h2>
+<div class="row">
+@foreach (var b in Model)
+{
+    <div class="col-md-3">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">@b.LevelName</h5>
+                <p class="card-text">Requires @b.PointsRequired points</p>
+            </div>
+        </div>
+    </div>
+}
+</div>
+
+

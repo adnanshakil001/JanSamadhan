@@ -1,0 +1,83 @@
+﻿@model IEnumerable<JanSamadhan.Models.Complaint>
+@{
+    var userRole = ViewBag.UserRole as string ?? "User";
+    var isTechnician = userRole == "Technician";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@(isTechnician ? "My Assigned Tasks" : "My Complaints")</h2>
+    @if (!isTechnician)
+    {
+        <a class="btn btn-success" href="/Complaint/Create">New Complaint</a>
+    }
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Created</th>
+            <th>Type</th>
+            <th>Address</th>
+            <th>Status</th>
+            @if (isTechnician)
+            {
+                <th>Reported By</th>
+                <th>Department</th>
+            }
+            <th>Photo</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var c in Model)
+    {
+        var statusClass = c.Status == JanSamadhan.Models.ComplaintStatus.Pending ? "pending" : c.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "inprogress" : "fixed";
+        <tr>
+            <td>@c.CreatedAt.ToLocalTime().ToString("g")</td>
+            <td>@c.ProblemType</td>
+            <td>@c.Address</td>
+            <td><span class="badge status-badge @statusClass">@c.Status</span></td>
+            @if (isTechnician)
+            {
+                <td>@c.User?.Name</td>
+                <td>@c.Department?.Name</td>
+            }
+            <td>
+                @if (!string.IsNullOrEmpty(c.PhotoPath))
+                {
+                    <a href="@c.PhotoPath" target="_blank">View</a>
+                }
+            </td>
+            <td>
+                <div class="d-flex gap-1">
+                    <a href="@Url.Action("Details", new { id = c.ComplaintId })" class="btn btn-sm btn-outline-primary">View Details</a>
+                    @if (isTechnician && c.Status == JanSamadhan.Models.ComplaintStatus.Pending)
+                    {
+                        <button class="btn btn-sm btn-warning" onclick="updateStatus(@c.ComplaintId, 1)">Start Work</button>
+                    }
+                    @if (isTechnician && c.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
+                    {
+                        <button class="btn btn-sm btn-success" onclick="updateStatus(@c.ComplaintId, 2)">Mark Fixed</button>
+                    }
+                </div>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (isTechnician)
+{
+    <script>
+        function updateStatus(complaintId, status) {
+            $.post('/Complaint/UpdateStatus', { id: complaintId, status: status })
+                .done(function() {
+                    location.reload();
+                })
+                .fail(function() {
+                    alert('Error updating status');
+                });
+        }
+    </script>
+}
+
+

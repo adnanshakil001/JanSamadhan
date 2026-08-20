@@ -1,0 +1,380 @@
+﻿@model JanSamadhan.Models.Complaint
+@{
+    ViewData["Title"] = "Complaint Details";
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("Technician") || User.IsInRole("DepartmentManager");
+    var canComment = Model.UserId == int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!) || isAdmin;
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Complaint #@Model.ComplaintId</h4>
+                <span class="badge status-badge @(Model.Status.ToString().ToLower())">@Model.Status</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Problem Type</h6>
+                        <p>@Model.ProblemType</p>
+                        
+                        <h6>Description</h6>
+                        <p>@(Model.Description ?? "No description provided")</p>
+                        
+                        <h6>Location</h6>
+                        <p>@(Model.Address ?? "Address not specified")</p>
+                        <small class="text-muted">Coordinates: @Model.Latitude, @Model.Longitude</small>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Reported By</h6>
+                        <p>@Model.User?.Name</p>
+                        
+                        <h6>Created</h6>
+                        <p>@Model.CreatedAt.ToLocalTime().ToString("f")</p>
+                        
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <h6>Last Updated</h6>
+                            <p>@Model.UpdatedAt.Value.ToLocalTime().ToString("f")</p>
+                        }
+                        
+                        @if (Model.Department != null)
+                        {
+                            <h6>Assigned Department</h6>
+                            <p>@Model.Department.Name</p>
+                        }
+                        
+                        @if (Model.AssignedToUser != null)
+                        {
+                            <h6>Assigned To</h6>
+                            <p>@Model.AssignedToUser.Name</p>
+                        }
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.PhotoPath))
+                {
+                    <div class="mt-3">
+                        <h6>Photo</h6>
+                        <img src="@Model.PhotoPath" class="img-fluid rounded" style="max-height: 300px;" alt="Complaint photo" />
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Comments</h5>
+            </div>
+            <div class="card-body">
+                @if (canComment)
+                {
+                    <div class="mb-4">
+                        <h6>Add Comment</h6>
+                        <form id="commentForm" enctype="multipart/form-data">
+                            <input type="hidden" id="complaintId" value="@Model.ComplaintId" />
+                            <div class="mb-3">
+                                <textarea class="form-control" id="commentContent" rows="3" placeholder="Enter your comment..." maxlength="1000" required></textarea>
+                                <small class="text-muted">Max 1000 characters</small>
+                            </div>
+                            
+                            @if (isAdmin)
+                            {
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="visibleToUser" checked>
+                                        <label class="form-check-label" for="visibleToUser">
+                                            Visible to user
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Attachments (optional, max 3 files)</label>
+                                <input type="file" class="form-control" id="attachments" multiple accept="image/*,.pdf">
+                                <small class="text-muted">Accepted formats: JPG, PNG, GIF, PDF (max 3 files)</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Post Comment</button>
+                        </form>
+                    </div>
+                }
+                
+                <div id="commentsList">
+                    <!-- Comments will be loaded here via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        @if (isAdmin)
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6>Admin Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Pending)
+                        {
+                            <button class="btn btn-warning" onclick="updateStatus(@Model.ComplaintId, 1)">Mark In Progress</button>
+                        }
+                        @if (Model.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
+                        {
+                            <button class="btn btn-success" onclick="updateStatus(@Model.ComplaintId, 2)">Mark Fixed</button>
+                        }
+                        <button class="btn btn-info" onclick="assignComplaint(@Model.ComplaintId)">Assign</button>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Fixed && Model.Rating == null && Model.UserId == int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!))
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6>Rate This Resolution</h6>
+                </div>
+                <div class="card-body">
+                    <div id="ratingForm">
+                        <div class="mb-3">
+                            <label class="form-label">Rating</label>
+                            <div class="rating">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span class="star" data-rating="@i">★</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comment (optional)</label>
+                            <textarea class="form-control" id="ratingComment" rows="3" maxlength="1000"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="submitRating(@Model.ComplaintId)">Submit Rating</button>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        @if (Model.Rating != null)
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h6>User Rating</h6>
+                </div>
+                <div class="card-body">
+                    <div class="rating-display">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <span class="star-display @(i <= Model.Rating.Score ? "filled" : "")">★</span>
+                        }
+                        <span class="ms-2">@Model.Rating.Score/5</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Rating.Comment))
+                    {
+                        <p class="mt-2">@Model.Rating.Comment</p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentRating = 0;
+    
+    $(document).ready(function() {
+        loadComments();
+        
+        // Rating stars interaction (only for interactive rating form)
+        $('#ratingForm .star').click(function() {
+            currentRating = $(this).data('rating');
+            $('#ratingForm .star').removeClass('filled');
+            $('#ratingForm .star').slice(0, currentRating).addClass('filled');
+        });
+        
+        $('#ratingForm .star').hover(function() {
+            const rating = $(this).data('rating');
+            $('#ratingForm .star').removeClass('filled');
+            $('#ratingForm .star').slice(0, rating).addClass('filled');
+        }, function() {
+            $('#ratingForm .star').removeClass('filled');
+            $('#ratingForm .star').slice(0, currentRating).addClass('filled');
+        });
+        
+        // Comment form submission
+        $('#commentForm').submit(function(e) {
+            e.preventDefault();
+            submitComment();
+        });
+    });
+    
+    function loadComments() {
+        $.get('/Comment/GetComments', { complaintId: @Model.ComplaintId })
+            .done(function(response) {
+                if (response.success) {
+                    displayComments(response.comments);
+                }
+            });
+    }
+    
+    function displayComments(comments) {
+        const commentsList = $('#commentsList');
+        commentsList.empty();
+        
+        if (comments.length === 0) {
+            commentsList.append('<p class="text-muted">No comments yet.</p>');
+            return;
+        }
+        
+        // Add comments
+        comments.forEach(function(comment) {
+            const isInternal = !comment.visibleToUser;
+            const roleBadge = comment.authorRole === 'User' ? 'badge-secondary' : 'badge-primary';
+            
+            commentsList.append(`
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">
+                                ${isInternal ? 'Internal Note' : 'Comment'} 
+                                <span class="badge ${roleBadge}">${comment.authorRole}</span>
+                            </h6>
+                            <small class="text-muted">${new Date(comment.createdAt).toLocaleString()}</small>
+                        </div>
+                        <p class="mb-2">${comment.content}</p>
+                        <small class="text-muted">By: ${comment.authorName}</small>
+                        ${comment.attachments.length > 0 ? displayAttachments(comment.attachments) : ''}
+                    </div>
+                </div>
+            `);
+        });
+    }
+    
+    function displayAttachments(attachments) {
+        let html = '<div class="mt-2"><strong>Attachments:</strong><br>';
+        attachments.forEach(function(attachment) {
+            if (attachment.contentType.startsWith('image/')) {
+                html += `<a href="${attachment.filePath}" target="_blank" class="me-2">
+                    <img src="${attachment.filePath}" style="max-width: 100px; max-height: 100px;" class="img-thumbnail" />
+                </a>`;
+            } else {
+                html += `<a href="${attachment.filePath}" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
+                    <i class="fas fa-file"></i> ${attachment.fileName}
+                </a>`;
+            }
+        });
+        html += '</div>';
+        return html;
+    }
+    
+    function submitComment() {
+        const formData = new FormData();
+        formData.append('complaintId', $('#complaintId').val());
+        formData.append('content', $('#commentContent').val());
+        formData.append('visibleToUser', $('#visibleToUser').is(':checked'));
+        
+        const attachments = $('#attachments')[0].files;
+        for (let i = 0; i < attachments.length; i++) {
+            formData.append('attachments', attachments[i]);
+        }
+        
+        $.ajax({
+            url: '/Comment/Create',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    $('#commentContent').val('');
+                    $('#attachments').val('');
+                    loadComments();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            }
+        });
+    }
+    
+    function updateStatus(complaintId, status) {
+        $.post('/Admin/UpdateStatus', { id: complaintId, status: status })
+            .done(function() {
+                location.reload();
+            });
+    }
+    
+    function submitRating(complaintId) {
+        if (currentRating === 0) {
+            alert('Please select a rating');
+            return;
+        }
+        
+        $.post('/Complaint/Rate', {
+            complaintId: complaintId,
+            score: currentRating,
+            comment: $('#ratingComment').val()
+        }).done(function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        });
+    }
+</script>
+
+<style>
+
+.rating .star {
+    font-size: 24px;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+    user-select: none;
+}
+
+.rating .star:hover {
+    color: #ffc107;
+}
+
+.rating .star.filled {
+    color: #ffc107;
+}
+
+.rating-display .star-display {
+    font-size: 20px;
+    color: #ddd;
+    cursor: default;
+    user-select: none;
+    pointer-events: none;
+}
+
+.rating-display .star-display.filled {
+    color: #ffc107;
+}
+
+.status-badge {
+    font-size: 0.8em;
+}
+
+.status-badge.pending {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.status-badge.inprogress {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.status-badge.fixed {
+    background-color: #28a745;
+    color: #fff;
+}
+</style>
+}

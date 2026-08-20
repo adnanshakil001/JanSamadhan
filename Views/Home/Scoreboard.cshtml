@@ -1,0 +1,26 @@
+@model IEnumerable<dynamic>
+<h2>User Scoreboard</h2>
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Badge</th>
+            <th>Points</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{ var i = 1; }
+        @foreach (var u in Model)
+        {
+            <tr>
+                <td>@i</td>
+                <td>@u.Name</td>
+                <td>@u.BadgeLevel</td>
+                <td>@u.Points</td>
+            </tr>
+            i++;
+        }
+    </tbody>
+</table>
+

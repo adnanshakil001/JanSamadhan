@@ -1,0 +1,326 @@
+@{
+    ViewData["Title"] = "Complaints Map";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h6>Map Controls</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Layers</h6>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showMarkers" checked>
+                        <label class="form-check-label" for="showMarkers">Markers</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showClusters" checked>
+                        <label class="form-check-label" for="showClusters">Clusters</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showHeatmap">
+                        <label class="form-check-label" for="showHeatmap">Heatmap</label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6>Filters</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select form-select-sm" id="statusFilter">
+                            <option value="">All</option>
+                            <option value="Pending">Pending</option>
+                            <option value="InProgress">In Progress</option>
+                            <option value="Fixed">Fixed</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Department</label>
+                        <select class="form-select form-select-sm" id="departmentFilter">
+                            <option value="">All</option>
+                            <option value="1">Public Works</option>
+                            <option value="2">Traffic Management</option>
+                            <option value="3">Utilities</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">From Date</label>
+                        <input type="date" class="form-control form-control-sm" id="fromDate">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">To Date</label>
+                        <input type="date" class="form-control form-control-sm" id="toDate">
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="applyFilters()">Apply Filters</button>
+                </div>
+
+                <div class="mb-3">
+                    <h6>Legend</h6>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #ffc107;"></span>
+                        <span>Pending</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #17a2b8;"></span>
+                        <span>In Progress</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #28a745;"></span>
+                        <span>Fixed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div id="map" style="height: 600px; border: 1px solid #ccc;"></div>
+    </div>
+</div>
+
+@section Scripts {
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<script>
+    let map;
+    let markersLayer;
+    let clustersLayer;
+    let heatmapLayer;
+    let currentData = [];
+
+    $(document).ready(function() {
+        initializeMap();
+        loadMapData();
+        
+        // Layer controls
+        $('#showMarkers').change(function() {
+            if ($(this).is(':checked')) {
+                markersLayer.addTo(map);
+            } else {
+                map.removeLayer(markersLayer);
+            }
+        });
+        
+        $('#showClusters').change(function() {
+            if ($(this).is(':checked')) {
+                clustersLayer.addTo(map);
+            } else {
+                map.removeLayer(clustersLayer);
+            }
+        });
+        
+        $('#showHeatmap').change(function() {
+            if ($(this).is(':checked')) {
+                createHeatmap();
+            } else {
+                if (heatmapLayer) {
+                    map.removeLayer(heatmapLayer);
+                }
+            }
+        });
+    });
+
+    function initializeMap() {
+        // Initialize map centered on a default location (you can change this)
+        map = L.map('map').setView([20.5937, 78.9629], 5); // India center
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Initialize layers
+        markersLayer = L.layerGroup();
+        clustersLayer = L.markerClusterGroup({
+            chunkedLoading: true,
+            maxClusterRadius: 50,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            removeOutsideVisibleBounds: false
+        });
+    }
+
+    function loadMapData() {
+        const status = $('#statusFilter').val();
+        const department = $('#departmentFilter').val();
+        const fromDate = $('#fromDate').val();
+        const toDate = $('#toDate').val();
+
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        if (department) params.append('departmentId', department);
+        if (fromDate) params.append('from', fromDate);
+        if (toDate) params.append('to', toDate);
+
+        $.get(`/Map/MapData?${params.toString()}`)
+            .done(function(data) {
+                currentData = data.features;
+                displayMarkers(data.features);
+            });
+    }
+
+    function displayMarkers(features) {
+        // Clear existing markers
+        markersLayer.clearLayers();
+        clustersLayer.clearLayers();
+
+        features.forEach(function(feature) {
+            const coords = feature.geometry.coordinates;
+            const props = feature.properties;
+            
+            const marker = L.marker([coords[1], coords[0]]);
+            
+            // Store complaint ID in marker data for easy removal
+            marker.complaintId = props.id;
+            
+            const statusColor = getStatusColor(props.status);
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background-color: ${statusColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            marker.setIcon(icon);
+            
+            const popupContent = `
+                <div>
+                    <h6>Complaint #${props.id}</h6>
+                    <p><strong>Type:</strong> ${props.type}</p>
+                    <p><strong>Status:</strong> <span class="badge" style="background-color: ${statusColor}">${props.status}</span></p>
+                    <p><strong>User:</strong> ${props.userName}</p>
+                    <p><strong>Created:</strong> ${new Date(props.createdAt).toLocaleDateString()}</p>
+                    ${props.photoUrl ? `<img src="${props.photoUrl}" style="max-width: 100px; max-height: 100px;" class="img-thumbnail mt-2">` : ''}
+                    <div class="mt-2">
+                        <a href="/Admin/Details/${props.id}" class="btn btn-sm btn-primary">View Details</a>
+                        <button class="btn btn-sm btn-danger" onclick="removeComplaint(${props.id})">Remove</button>
+                    </div>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            
+            markersLayer.addLayer(marker);
+            clustersLayer.addLayer(marker);
+        });
+
+        // Add layers to map
+        if ($('#showMarkers').is(':checked')) {
+            markersLayer.addTo(map);
+        }
+        if ($('#showClusters').is(':checked')) {
+            clustersLayer.addTo(map);
+        }
+    }
+
+    function createHeatmap() {
+        if (heatmapLayer) {
+            map.removeLayer(heatmapLayer);
+        }
+
+        const heatmapData = currentData.map(function(feature) {
+            const coords = feature.geometry.coordinates;
+            return [coords[1], coords[0], 1]; // [lat, lng, intensity]
+        });
+
+        heatmapLayer = L.heatLayer(heatmapData, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 17
+        });
+
+        heatmapLayer.addTo(map);
+    }
+
+    function getStatusColor(status) {
+        switch (status) {
+            case 'Pending': return '#ffc107';
+            case 'InProgress': return '#17a2b8';
+            case 'Fixed': return '#28a745';
+            default: return '#6c757d';
+        }
+    }
+
+    function applyFilters() {
+        loadMapData();
+    }
+
+    function removeComplaint(complaintId) {
+        if (confirm('Are you sure you want to remove this complaint?')) {
+            // Remove from database
+            $.ajax({
+                url: `/Admin/DeleteComplaint/${complaintId}`,
+                type: 'DELETE',
+                success: function(response) {
+                    if (response.success) {
+                        // Remove marker from both layers
+                        removeMarkerFromLayers(complaintId);
+                        
+                        // Update current data
+                        currentData = currentData.filter(feature => feature.properties.id !== complaintId);
+                        
+                        alert('Complaint removed successfully');
+                    } else {
+                        alert('Error removing complaint: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error removing complaint');
+                }
+            });
+        }
+    }
+
+    function removeMarkerFromLayers(complaintId) {
+        let markerToRemove = null;
+        
+        // Find and remove from markers layer
+        markersLayer.eachLayer(function(marker) {
+            if (marker.complaintId === complaintId) {
+                markerToRemove = marker;
+                markersLayer.removeLayer(marker);
+            }
+        });
+        
+        // Remove from clusters layer
+        if (markerToRemove) {
+            clustersLayer.removeLayer(markerToRemove);
+        }
+        
+        // Force cluster refresh to update counts
+        if ($('#showClusters').is(':checked')) {
+            // Temporarily remove and re-add the cluster layer to force refresh
+            map.removeLayer(clustersLayer);
+            clustersLayer.addTo(map);
+        }
+    }
+</script>
+
+<style>
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    margin-right: 8px;
+    border: 1px solid #ccc;
+}
+
+.custom-marker {
+    background: transparent !important;
+    border: none !important;
+}
+</style>
+}

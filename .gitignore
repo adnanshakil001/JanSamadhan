@@ -1,0 +1,9 @@
+## Ignore Visual Studio & .NET temporary files
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+*.user
+*.suo
+~$*
+*.lock.json

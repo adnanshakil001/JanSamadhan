@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Technician Login";
+}
+
+<h2>Technician Login</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="post" asp-action="TechnicianLogin" asp-controller="Account">
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input class="form-control" type="password" name="password" required />
+    </div>
+    <button class="btn btn-primary" type="submit">Login as Technician</button>
+    <a class="btn btn-link" href="/Account/Login">Back to User Login</a>
+</form>
