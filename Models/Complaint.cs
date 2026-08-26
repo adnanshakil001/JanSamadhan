@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace JanSamadhan.Models
@@ -52,9 +52,6 @@ namespace JanSamadhan.Models
         [ForeignKey(nameof(AssignedToUserId))]
         public User? AssignedToUser { get; set; }
 
-        public int? RatingId { get; set; }
-
-        [ForeignKey(nameof(RatingId))]
         public ComplaintRating? Rating { get; set; }
 
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();

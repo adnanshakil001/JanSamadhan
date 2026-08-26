@@ -1,4 +1,4 @@
-﻿using JanSamadhan.Data;
+using JanSamadhan.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using JanSamadhan.Services;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=(localdb)\\mssqllocaldb;Database=JanSamadhanDb;Trusted_Connection=True;MultipleActiveResultSets=true";
+    ?? "Data Source=JanSamadhan.db";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlite(connectionString));
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -36,9 +36,8 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -59,12 +58,9 @@ using (var scope = app.Services.CreateScope())
     // Removed automatic database deletion in Development to preserve local data across restarts
     try
     {
-        db.Database.Migrate();
-    }
-    catch
-    {
         db.Database.EnsureCreated();
     }
+    catch { }
 
     // Seed a single admin account from configuration if none exists
     try

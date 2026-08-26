@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using JanSamadhan.Data;
 using JanSamadhan.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -153,6 +153,7 @@ namespace JanSamadhan.Controllers
                 .Include(c => c.Department)
                 .Include(c => c.AssignedToUser)
                 .Include(c => c.Rating)
+                .Include(c => c.TechnicianPhotos)
                 .FirstOrDefaultAsync(c => c.ComplaintId == id);
 
             if (complaint == null)
@@ -226,7 +227,7 @@ namespace JanSamadhan.Controllers
                 };
 
                 _db.ComplaintRatings.Add(rating);
-                complaint.RatingId = rating.RatingId;
+                complaint.Rating = rating;
             }
 
             await _db.SaveChangesAsync();

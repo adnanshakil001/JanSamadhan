@@ -1,4 +1,4 @@
-﻿@{
+@{
     var isAuthenticated = Context.User?.Identity?.IsAuthenticated ?? false;
     var isAdmin = Context.User?.IsInRole("Admin") ?? false;
     var isDepartmentManager = Context.User?.IsInRole("DepartmentManager") ?? false;
@@ -38,6 +38,7 @@
                         {
                             <!-- Admin Navigation -->
                             <li class="nav-item"><a class="nav-link" href="/Admin">Admin Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link text-warning fw-bold" href="/Admin/CreateTechnician">+ Create Technician</a></li>
                             <li class="nav-item"><a class="nav-link" href="/Role">Role Management</a></li>
                             <li class="nav-item"><a class="nav-link" href="/Map/AdminMap">Map View</a></li>
                             <li class="nav-item dropdown">

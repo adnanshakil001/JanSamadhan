@@ -1,4 +1,4 @@
-﻿using JanSamadhan.Data;
+using JanSamadhan.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
@@ -15,8 +15,8 @@ namespace JanSamadhan
                 .AddEnvironmentVariables()
                 .Build();
             var cs = config.GetConnectionString("DefaultConnection")
-                ?? "Server=(localdb)\\mssqllocaldb;Database=JanSamadhanDb;Trusted_Connection=True;MultipleActiveResultSets=true";
-            optionsBuilder.UseSqlServer(cs);
+                ?? "Data Source=JanSamadhan.db";
+            optionsBuilder.UseSqlite(cs);
             return new ApplicationDbContext(optionsBuilder.Options);
         }
     }

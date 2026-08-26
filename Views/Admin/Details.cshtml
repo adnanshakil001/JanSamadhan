@@ -1,4 +1,4 @@
-﻿@model JanSamadhan.Models.Complaint
+@model JanSamadhan.Models.Complaint
 @{
     ViewData["Title"] = "Complaint Details - Admin";
     var isAdmin = User.IsInRole("Admin") || User.IsInRole("Technician") || User.IsInRole("DepartmentManager");

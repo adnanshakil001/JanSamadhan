@@ -1,4 +1,4 @@
-﻿@model JanSamadhan.Models.Complaint
+@model JanSamadhan.Models.Complaint
 @{
     ViewData["Title"] = "Complaint Details";
     var isAdmin = User.IsInRole("Admin") || User.IsInRole("Technician") || User.IsInRole("DepartmentManager");
@@ -128,6 +128,27 @@
                         }
                         <button class="btn btn-info" onclick="assignComplaint(@Model.ComplaintId)">Assign</button>
                     </div>
+                </div>
+            </div>
+        }
+        
+        @if (Model.TechnicianPhotos != null && Model.TechnicianPhotos.Any())
+        {
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h6 class="mb-0 text-dark"><i class="fas fa-camera me-2"></i>Technician Work Proofs</h6>
+                </div>
+                <div class="card-body">
+                    @foreach (var photo in Model.TechnicianPhotos.OrderBy(p => p.UploadedAt))
+                    {
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="badge @(photo.PhotoType == "WorkInProgress" ? "bg-warning text-dark" : "bg-success") mb-1">
+                                @(photo.PhotoType == "WorkInProgress" ? "Work In Progress" : "Fixed / Completed")
+                            </span>
+                            <img src="@photo.PhotoPath" class="img-fluid rounded border d-block my-1" style="max-height: 200px;" alt="@photo.PhotoType Photo">
+                            <small class="text-muted">Uploaded: @photo.UploadedAt.ToLocalTime().ToString("MMM dd, h:mm tt")</small>
+                        </div>
+                    }
                 </div>
             </div>
         }

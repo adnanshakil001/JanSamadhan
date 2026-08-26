@@ -1,11 +1,12 @@
-﻿@model IEnumerable<JanSamadhan.Models.User>
+@model IEnumerable<JanSamadhan.Models.User>
 @{
     ViewData["Title"] = "User Role Management";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>User Role Management</h2>
-    <div>
+    <div class="d-flex gap-2">
+        <a href="/Admin/CreateTechnician" class="btn btn-success fw-bold">+ Add Technician</a>
         <a href="/Admin" class="btn btn-outline-primary">Back to Admin</a>
     </div>
 </div>

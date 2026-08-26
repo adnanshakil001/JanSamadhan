@@ -1,4 +1,4 @@
-﻿@model IEnumerable<JanSamadhan.Models.Complaint>
+@model IEnumerable<JanSamadhan.Models.Complaint>
 <h2>All Complaints</h2>
 
 @if (TempData["ErrorMessage"] != null)
@@ -60,11 +60,12 @@
                 <label class="form-label">Search</label>
                 <input type="text" class="form-control" name="q" value="@ViewBag.Q" placeholder="Search complaints...">
             </div>
-            <div class="col-12">
+            <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
                 <button type="submit" class="btn btn-primary">Apply Filters</button>
                 <a href="/Admin" class="btn btn-outline-secondary">Reset</a>
-                <a href="/Admin/Scoreboard" class="btn btn-outline-info">Scoreboard</a>
+                <a href="/Admin/CreateTechnician" class="btn btn-success fw-bold">+ Add Technician</a>
                 <a href="/Role" class="btn btn-outline-warning">Manage Roles</a>
+                <a href="/Admin/Scoreboard" class="btn btn-outline-info">Scoreboard</a>
                 <a href="/Admin/TechnicianScoreboard" class="btn btn-outline-success">Technician Board</a>
             </div>
         </form>
