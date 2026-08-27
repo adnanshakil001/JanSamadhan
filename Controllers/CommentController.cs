@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using JanSamadhan.Data;
 using JanSamadhan.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -33,9 +33,35 @@ namespace JanSamadhan.Controllers
                 return Json(new { success = false, message = "Complaint not found." });
             }
 
-            // Check if user has permission to comment
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            // Resolve user safely
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(idClaim, out int userId);
             var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+
+            int resolvedAuthorId = userId;
+            if (userRole == "Admin")
+            {
+                var adminUser = await _db.Users.FirstOrDefaultAsync(u => u.Role == "Admin" || (!string.IsNullOrEmpty(userEmail) && u.Email == userEmail));
+                if (adminUser != null)
+                {
+                    resolvedAuthorId = adminUser.UserId;
+                }
+                else
+                {
+                    var firstUser = await _db.Users.FirstOrDefaultAsync();
+                    if (firstUser != null) resolvedAuthorId = firstUser.UserId;
+                }
+            }
+            else
+            {
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId || (!string.IsNullOrEmpty(userEmail) && u.Email == userEmail));
+                if (user != null)
+                {
+                    userId = user.UserId;
+                    resolvedAuthorId = user.UserId;
+                }
+            }
             
             if (userRole == "User" && complaint.UserId != userId)
             {
@@ -45,7 +71,7 @@ namespace JanSamadhan.Controllers
             var comment = new Comment
             {
                 ComplaintId = complaintId,
-                AuthorId = userId,
+                AuthorId = resolvedAuthorId,
                 AuthorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown",
                 AuthorRole = userRole,
                 Content = content.Trim(),
@@ -97,8 +123,13 @@ namespace JanSamadhan.Controllers
         [HttpGet]
         public async Task<IActionResult> GetComments(int complaintId)
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(idClaim, out int userId);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId || (!string.IsNullOrEmpty(userEmail) && u.Email == userEmail));
+            if (user != null) userId = user.UserId;
             
             var complaint = await _db.Complaints.FindAsync(complaintId);
             if (complaint == null)

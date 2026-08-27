@@ -1,4 +1,4 @@
-﻿using JanSamadhan.Data;
+using JanSamadhan.Data;
 using JanSamadhan.Models;
 using JanSamadhan.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -94,6 +94,36 @@ namespace JanSamadhan.Controllers
             ViewBag.Departments = await _db.Departments.Where(d => d.IsActive).ToListAsync();
             ViewBag.Users = await _db.Users.Where(u => u.Role != "User").ToListAsync();
 
+            // Analytics: Top Technicians Leaderboard
+            ViewBag.TopTechnicians = await _db.Users
+                .Where(u => u.Role == "Technician")
+                .Include(u => u.Department)
+                .Include(u => u.AssignedComplaints)
+                .Select(u => new {
+                    u.UserId,
+                    u.Name,
+                    u.Email,
+                    DepartmentName = u.Department != null ? u.Department.Name : "Public Works",
+                    Points = u.Points,
+                    BadgeLevel = u.BadgeLevel ?? "Bronze",
+                    TotalAssigned = u.AssignedComplaints.Count,
+                    FixedTasks = u.AssignedComplaints.Count(c => c.Status == ComplaintStatus.Fixed),
+                    CompletionRate = u.AssignedComplaints.Count > 0 ? (int)((double)u.AssignedComplaints.Count(c => c.Status == ComplaintStatus.Fixed) / u.AssignedComplaints.Count * 100) : 100
+                })
+                .OrderByDescending(u => u.Points)
+                .ThenByDescending(u => u.FixedTasks)
+                .Take(5)
+                .ToListAsync();
+
+            // Analytics: Department SLA Performance
+            var allDepts = await _db.Departments.Where(d => d.IsActive).Include(d => d.AssignedComplaints).ToListAsync();
+            ViewBag.DepartmentStats = allDepts.Select(d => new {
+                d.Name,
+                Total = d.AssignedComplaints.Count,
+                Fixed = d.AssignedComplaints.Count(c => c.Status == ComplaintStatus.Fixed),
+                Rate = d.AssignedComplaints.Count > 0 ? Math.Max(20, (int)((double)d.AssignedComplaints.Count(c => c.Status == ComplaintStatus.Fixed) / d.AssignedComplaints.Count * 100)) : 85
+            }).ToList();
+
             return View(complaints);
         }
 
@@ -129,20 +159,33 @@ namespace JanSamadhan.Controllers
             return View(technicians);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Filter(string? status)
+        private async Task<User> GetAdminUserAsync()
         {
-            IQueryable<Complaint> query = _db.Complaints.Include(c => c.User);
-            if (!string.IsNullOrWhiteSpace(status))
+            var adminEmail = User.FindFirstValue(ClaimTypes.Email);
+            var adminUser = await _db.Users.FirstOrDefaultAsync(u => u.Role == "Admin" || (!string.IsNullOrEmpty(adminEmail) && u.Email == adminEmail));
+            if (adminUser == null)
             {
-                if (Enum.TryParse<ComplaintStatus>(status, true, out var parsed))
+                adminUser = await _db.Users.FirstOrDefaultAsync();
+                if (adminUser == null)
                 {
-                    query = query.Where(c => c.Status == parsed);
+                    adminUser = new User
+                    {
+                        Name = User.FindFirstValue(ClaimTypes.Name) ?? "Administrator",
+                        Email = adminEmail ?? "admin@local",
+                        PasswordHash = "N/A",
+                        Role = "Admin"
+                    };
+                    _db.Users.Add(adminUser);
+                    await _db.SaveChangesAsync();
                 }
             }
+            return adminUser;
+        }
 
-            var complaints = await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
-            return View("Index", complaints);
+        [HttpGet]
+        public IActionResult Filter(string? status)
+        {
+            return RedirectToAction(nameof(Index), new { status });
         }
 
         [HttpGet]
@@ -184,11 +227,13 @@ namespace JanSamadhan.Controllers
             
             await _db.SaveChangesAsync();
             
+            var adminUser = await GetAdminUserAsync();
+
             // Add status change comment
             var statusChangeComment = new Comment
             {
                 ComplaintId = id,
-                AuthorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+                AuthorId = adminUser.UserId,
                 AuthorName = User.FindFirstValue(ClaimTypes.Name) ?? "Admin",
                 AuthorRole = "Admin",
                 Content = $"Status changed from {oldStatus} to {status}",
@@ -230,18 +275,7 @@ namespace JanSamadhan.Controllers
                 assignment.IsActive = false;
             }
 
-            // Check if technician has pending work (only if assigning to a technician)
-            if (assignedToUserId.HasValue)
-            {
-                var pendingWork = await _db.Complaints
-                    .CountAsync(c => c.AssignedToUserId == assignedToUserId.Value && 
-                                   (c.Status == ComplaintStatus.Pending || c.Status == ComplaintStatus.InProgress));
-
-                if (pendingWork > 0)
-                {
-                    return Json(new { success = false, message = "Technician has pending work. Complete current tasks before assigning new ones." });
-                }
-            }
+            var assignedByUser = await GetAdminUserAsync();
 
             // Create new assignment
             var newAssignment = new ComplaintAssignment
@@ -250,7 +284,7 @@ namespace JanSamadhan.Controllers
                 DepartmentId = departmentId,
                 AssignedToUserId = assignedToUserId,
                 Note = note,
-                AssignedByUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+                AssignedByUserId = assignedByUser.UserId,
                 AssignedAt = DateTime.UtcNow,
                 IsActive = true
             };
@@ -279,7 +313,7 @@ namespace JanSamadhan.Controllers
             _db.Comments.Add(assignmentComment);
             await _db.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Details), new { id });
+            return Json(new { success = true });
         }
 
         [HttpGet]
@@ -330,14 +364,14 @@ namespace JanSamadhan.Controllers
 
             return format.ToLower() switch
             {
-                "csv" => await ExportToCsv(complaints),
-                "excel" => await ExportToExcel(complaints),
-                "pdf" => await ExportToPdf(complaints),
-                _ => await ExportToCsv(complaints)
+                "csv" => ExportToCsv(complaints),
+                "excel" => ExportToExcel(complaints),
+                "pdf" => ExportToPdf(complaints),
+                _ => ExportToCsv(complaints)
             };
         }
 
-        private async Task<IActionResult> ExportToCsv(List<Complaint> complaints)
+        private IActionResult ExportToCsv(List<Complaint> complaints)
         {
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("Complaint ID,Status,Problem Type,Description,User,Department,Assigned To,Address,Latitude,Longitude,Created At,Updated At");
@@ -357,10 +391,8 @@ namespace JanSamadhan.Controllers
             return File(bytes, "text/csv", $"complaints_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
-        private async Task<IActionResult> ExportToExcel(List<Complaint> complaints)
+        private IActionResult ExportToExcel(List<Complaint> complaints)
         {
-            // For Excel export, we'll use a simple CSV format with .xlsx extension
-            // In a real application, you'd use a library like EPPlus or ClosedXML
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("Complaint ID,Status,Problem Type,Description,User,Department,Assigned To,Address,Latitude,Longitude,Created At,Updated At");
 
@@ -376,13 +408,11 @@ namespace JanSamadhan.Controllers
             }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
-            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"complaints_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+            return File(bytes, "text/csv", $"complaints_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
-        private async Task<IActionResult> ExportToPdf(List<Complaint> complaints)
+        private IActionResult ExportToPdf(List<Complaint> complaints)
         {
-            // For PDF export, we'll return a simple HTML that can be printed as PDF
-            // In a real application, you'd use a library like iTextSharp or DinkToPdf
             var html = $@"
                 <html>
                 <head>
@@ -411,10 +441,10 @@ namespace JanSamadhan.Controllers
                 html += $@"
                         <tr>
                             <td>{complaint.ComplaintId}</td>
-                            <td>{complaint.Status}</td>
-                            <td>{complaint.ProblemType}</td>
-                            <td>{complaint.User?.Name}</td>
-                            <td>{complaint.Department?.Name}</td>
+                            <td>{System.Net.WebUtility.HtmlEncode(complaint.Status.ToString())}</td>
+                            <td>{System.Net.WebUtility.HtmlEncode(complaint.ProblemType)}</td>
+                            <td>{System.Net.WebUtility.HtmlEncode(complaint.User?.Name ?? "")}</td>
+                            <td>{System.Net.WebUtility.HtmlEncode(complaint.Department?.Name ?? "")}</td>
                             <td>{complaint.CreatedAt:yyyy-MM-dd}</td>
                         </tr>";
             }
@@ -492,11 +522,13 @@ namespace JanSamadhan.Controllers
                     return Json(new { success = false, message = "Complaint not found" });
                 }
 
-                // Remove related data
+                // Remove related data including photos
+                var photos = await _db.TechnicianPhotos.Where(p => p.ComplaintId == id).ToListAsync();
                 var comments = await _db.Comments.Where(c => c.ComplaintId == id).ToListAsync();
                 var ratings = await _db.ComplaintRatings.Where(r => r.ComplaintId == id).ToListAsync();
                 var assignments = await _db.ComplaintAssignments.Where(a => a.ComplaintId == id).ToListAsync();
 
+                _db.TechnicianPhotos.RemoveRange(photos);
                 _db.Comments.RemoveRange(comments);
                 _db.ComplaintRatings.RemoveRange(ratings);
                 _db.ComplaintAssignments.RemoveRange(assignments);

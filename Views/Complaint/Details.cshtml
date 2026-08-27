@@ -1,233 +1,294 @@
 @model JanSamadhan.Models.Complaint
 @{
-    ViewData["Title"] = "Complaint Details";
+    ViewData["Title"] = "Complaint #" + Model.ComplaintId + " - JanSamadhan";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
+    var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     var isAdmin = User.IsInRole("Admin") || User.IsInRole("Technician") || User.IsInRole("DepartmentManager");
-    var canComment = Model.UserId == int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!) || isAdmin;
+    var canComment = Model.UserId == currentUserId || isAdmin;
+    var isMyComplaint = Model.UserId == currentUserId;
 }
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4>Complaint #@Model.ComplaintId</h4>
-                <span class="badge status-badge @(Model.Status.ToString().ToLower())">@Model.Status</span>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Problem Type</h6>
-                        <p>@Model.ProblemType</p>
-                        
-                        <h6>Description</h6>
-                        <p>@(Model.Description ?? "No description provided")</p>
-                        
-                        <h6>Location</h6>
-                        <p>@(Model.Address ?? "Address not specified")</p>
-                        <small class="text-muted">Coordinates: @Model.Latitude, @Model.Longitude</small>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Reported By</h6>
-                        <p>@Model.User?.Name</p>
-                        
-                        <h6>Created</h6>
-                        <p>@Model.CreatedAt.ToLocalTime().ToString("f")</p>
-                        
-                        @if (Model.UpdatedAt.HasValue)
-                        {
-                            <h6>Last Updated</h6>
-                            <p>@Model.UpdatedAt.Value.ToLocalTime().ToString("f")</p>
-                        }
-                        
-                        @if (Model.Department != null)
-                        {
-                            <h6>Assigned Department</h6>
-                            <p>@Model.Department.Name</p>
-                        }
-                        
-                        @if (Model.AssignedToUser != null)
-                        {
-                            <h6>Assigned To</h6>
-                            <p>@Model.AssignedToUser.Name</p>
-                        }
-                    </div>
-                </div>
-                
-                @if (!string.IsNullOrEmpty(Model.PhotoPath))
-                {
-                    <div class="mt-3">
-                        <h6>Photo</h6>
-                        <img src="@Model.PhotoPath" class="img-fluid rounded" style="max-height: 300px;" alt="Complaint photo" />
-                    </div>
-                }
-            </div>
+<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
+
+            <nav class="nav flex-column gap-1">
+                <a href="/Complaint" class="sidebar-link active">
+                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
+                </a>
+                <a href="/Complaint/Create" class="sidebar-link">
+                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
+                </a>
+                <a href="/Home/Nearby" class="sidebar-link">
+                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
+                </a>
+                <a href="/Badge" class="sidebar-link">
+                    <i class="fas fa-medal me-3"></i> Badges & Rewards
+                </a>
+                <a href="/Home/Scoreboard" class="sidebar-link">
+                    <i class="fas fa-trophy me-3"></i> Leaderboard
+                </a>
+            </nav>
         </div>
 
-        <!-- Comments Section -->
-        <div class="card">
-            <div class="card-header">
-                <h5>Comments</h5>
-            </div>
-            <div class="card-body">
-                @if (canComment)
-                {
-                    <div class="mb-4">
-                        <h6>Add Comment</h6>
-                        <form id="commentForm" enctype="multipart/form-data">
-                            <input type="hidden" id="complaintId" value="@Model.ComplaintId" />
-                            <div class="mb-3">
-                                <textarea class="form-control" id="commentContent" rows="3" placeholder="Enter your comment..." maxlength="1000" required></textarea>
-                                <small class="text-muted">Max 1000 characters</small>
-                            </div>
-                            
-                            @if (isAdmin)
-                            {
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="visibleToUser" checked>
-                                        <label class="form-check-label" for="visibleToUser">
-                                            Visible to user
-                                        </label>
-                                    </div>
-                                </div>
-                            }
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Attachments (optional, max 3 files)</label>
-                                <input type="file" class="form-control" id="attachments" multiple accept="image/*,.pdf">
-                                <small class="text-muted">Accepted formats: JPG, PNG, GIF, PDF (max 3 files)</small>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary">Post Comment</button>
-                        </form>
-                    </div>
-                }
-                
-                <div id="commentsList">
-                    <!-- Comments will be loaded here via AJAX -->
-                </div>
+        <div class="pt-3 border-top">
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        @if (isAdmin)
-        {
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6>Admin Actions</h6>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Complaint" class="btn btn-outline-secondary btn-sm rounded-pill px-3"><i class="fas fa-arrow-left me-1"></i> Back to Complaints</a>
+                <span class="text-muted">/</span>
+                <span class="fw-semibold text-dark">Complaint #@Model.ComplaintId</span>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
+            </div>
+        </header>
+
+        <main class="p-4 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bolder text-dark mb-0">Complaint #@Model.ComplaintId</h2>
+                    <p class="text-muted mb-0 small">Live resolution progress, technician photo proofs, and rating</p>
                 </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Pending)
-                        {
-                            <button class="btn btn-warning" onclick="updateStatus(@Model.ComplaintId, 1)">Mark In Progress</button>
-                        }
-                        @if (Model.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
-                        {
-                            <button class="btn btn-success" onclick="updateStatus(@Model.ComplaintId, 2)">Mark Fixed</button>
-                        }
-                        <button class="btn btn-info" onclick="assignComplaint(@Model.ComplaintId)">Assign</button>
+                <div>
+                    <span class="badge status-badge @(Model.Status.ToString().ToLower()) rounded-pill px-3 py-2 fs-6">
+                        @Model.Status
+                    </span>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Left 8 Columns -->
+                <div class="col-lg-8">
+                    <!-- Issue Overview Card -->
+                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
+                        <div class="card-header bg-white border-0 pt-3 px-4">
+                            <h5 class="fw-bold mb-0 text-dark">Grievance Overview</h5>
+                        </div>
+                        <div class="card-body px-4 pb-4 pt-2">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="text-muted small fw-semibold">Problem Type</label>
+                                    <p class="fw-bold text-dark mb-2"><span class="badge bg-light text-dark border">@Model.ProblemType</span></p>
+                                    
+                                    <label class="text-muted small fw-semibold">Description</label>
+                                    <p class="text-dark mb-2">@(Model.Description ?? "No additional description provided")</p>
+                                    
+                                    <label class="text-muted small fw-semibold">Location / Address</label>
+                                    <p class="text-dark mb-1">@(Model.Address ?? "Location pinned on map")</p>
+                                    <small class="text-muted font-monospace"><i class="fas fa-map-pin me-1 text-danger"></i>@Model.Latitude, @Model.Longitude</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted small fw-semibold">Reported By</label>
+                                    <p class="fw-bold text-dark mb-2">@Model.User?.Name</p>
+                                    
+                                    <label class="text-muted small fw-semibold">Reported Date</label>
+                                    <p class="text-dark mb-2">@Model.CreatedAt.ToLocalTime().ToString("f")</p>
+                                    
+                                    <label class="text-muted small fw-semibold">Assigned Department</label>
+                                    <p class="fw-semibold text-primary mb-2">@(Model.Department?.Name ?? "Under Triage")</p>
+                                    
+                                    <label class="text-muted small fw-semibold">Assigned Field Technician</label>
+                                    <p class="fw-semibold text-dark mb-0">@(Model.AssignedToUser?.Name ?? "Pending Assignment")</p>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model.PhotoPath))
+                            {
+                                <div class="mt-3 border-top pt-3">
+                                    <label class="text-muted small fw-semibold d-block mb-2">Original Reported Photo Proof</label>
+                                    <img src="@Model.PhotoPath" class="img-fluid rounded-3 border shadow-sm" style="max-height: 250px;" alt="Complaint photo" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Comments & Discussion Stream -->
+                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
+                        <div class="card-header bg-white border-0 pt-3 px-4">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-comments me-2 text-primary"></i>Updates & Discussion Thread</h5>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            @if (canComment)
+                            {
+                                <div class="p-3 bg-light rounded-3 border mb-4">
+                                    <h6 class="fw-bold text-dark mb-2">Leave a Comment or Question</h6>
+                                    <form id="commentForm" enctype="multipart/form-data">
+                                        <input type="hidden" id="complaintId" value="@Model.ComplaintId" />
+                                        <div class="mb-3">
+                                            <textarea class="form-control rounded-3" id="commentContent" rows="3" placeholder="Enter your comment..." maxlength="1000" required></textarea>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <input type="file" class="form-control form-control-sm" id="attachments" multiple accept="image/*,.pdf">
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill fw-semibold">
+                                                <i class="fas fa-paper-plane me-1"></i> Post
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            }
+
+                            <div id="commentsList" class="d-flex flex-column gap-3">
+                                <!-- Loaded via AJAX -->
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
-        
-        @if (Model.TechnicianPhotos != null && Model.TechnicianPhotos.Any())
-        {
-            <div class="card mb-4 border-info">
-                <div class="card-header bg-info bg-opacity-25">
-                    <h6 class="mb-0 text-dark"><i class="fas fa-camera me-2"></i>Technician Work Proofs</h6>
-                </div>
-                <div class="card-body">
-                    @foreach (var photo in Model.TechnicianPhotos.OrderBy(p => p.UploadedAt))
+
+                <!-- Right 4 Columns: Proofs & Rating -->
+                <div class="col-lg-4">
+                    <!-- Technician Photo Proofs -->
+                    @if (Model.TechnicianPhotos != null && Model.TechnicianPhotos.Any())
                     {
-                        <div class="mb-3 border-bottom pb-2">
-                            <span class="badge @(photo.PhotoType == "WorkInProgress" ? "bg-warning text-dark" : "bg-success") mb-1">
-                                @(photo.PhotoType == "WorkInProgress" ? "Work In Progress" : "Fixed / Completed")
-                            </span>
-                            <img src="@photo.PhotoPath" class="img-fluid rounded border d-block my-1" style="max-height: 200px;" alt="@photo.PhotoType Photo">
-                            <small class="text-muted">Uploaded: @photo.UploadedAt.ToLocalTime().ToString("MMM dd, h:mm tt")</small>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-        
-        @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Fixed && Model.Rating == null && Model.UserId == int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!))
-        {
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6>Rate This Resolution</h6>
-                </div>
-                <div class="card-body">
-                    <div id="ratingForm">
-                        <div class="mb-3">
-                            <label class="form-label">Rating</label>
-                            <div class="rating">
-                                @for (int i = 1; i <= 5; i++)
+                        <div class="card border-info rounded-4 shadow-sm mb-4 bg-white">
+                            <div class="card-header bg-info bg-opacity-25 border-0 pt-3 px-4">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-camera me-2"></i>Field Technician Proofs</h6>
+                            </div>
+                            <div class="card-body px-4 pb-3">
+                                @foreach (var photo in Model.TechnicianPhotos.OrderBy(p => p.UploadedAt))
                                 {
-                                    <span class="star" data-rating="@i">★</span>
+                                    <div class="mb-3 border-bottom pb-2">
+                                        <span class="badge @(photo.PhotoType == "WorkInProgress" ? "bg-warning text-dark" : "bg-success") mb-1">
+                                            @(photo.PhotoType == "WorkInProgress" ? "Work In Progress" : "Fixed / Resolved")
+                                        </span>
+                                        <img src="@photo.PhotoPath" class="img-fluid rounded-3 border d-block my-2" style="max-height: 180px;" alt="@photo.PhotoType Photo">
+                                        <small class="text-muted">Uploaded: @photo.UploadedAt.ToLocalTime().ToString("MMM dd, h:mm tt")</small>
+                                    </div>
                                 }
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Comment (optional)</label>
-                            <textarea class="form-control" id="ratingComment" rows="3" maxlength="1000"></textarea>
-                        </div>
-                        <button class="btn btn-primary" onclick="submitRating(@Model.ComplaintId)">Submit Rating</button>
-                    </div>
-                </div>
-            </div>
-        }
-        
-        @if (Model.Rating != null)
-        {
-            <div class="card">
-                <div class="card-header">
-                    <h6>User Rating</h6>
-                </div>
-                <div class="card-body">
-                    <div class="rating-display">
-                        @for (int i = 1; i <= 5; i++)
-                        {
-                            <span class="star-display @(i <= Model.Rating.Score ? "filled" : "")">★</span>
-                        }
-                        <span class="ms-2">@Model.Rating.Score/5</span>
-                    </div>
-                    @if (!string.IsNullOrEmpty(Model.Rating.Comment))
+                    }
+
+                    <!-- Citizen Rating & Review Card -->
+                    @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Fixed && Model.Rating == null && isMyComplaint)
                     {
-                        <p class="mt-2">@Model.Rating.Comment</p>
+                        <div class="card border-warning rounded-4 shadow-sm mb-4 bg-white">
+                            <div class="card-header bg-warning bg-opacity-25 border-0 pt-3 px-4">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-star me-2 text-warning"></i>Rate Your Resolution</h6>
+                            </div>
+                            <div class="card-body px-4 pb-4 pt-2">
+                                <p class="text-muted small mb-3">Your issue has been marked as <strong>Fixed</strong>! Please rate the technician's work quality.</p>
+                                <div id="ratingForm">
+                                    <div class="mb-3 text-center">
+                                        <div class="rating fs-3">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <span class="star" data-rating="@i">★</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Feedback Comment (Optional)</label>
+                                        <textarea class="form-control rounded-3" id="ratingComment" rows="3" placeholder="Share your experience..." maxlength="1000"></textarea>
+                                    </div>
+                                    <button class="btn btn-warning w-100 fw-bold rounded-pill text-dark" onclick="submitRating(@Model.ComplaintId)">
+                                        Submit Rating (+5 Pts)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.Rating != null)
+                    {
+                        <div class="card border rounded-4 shadow-sm mb-4 bg-white">
+                            <div class="card-header bg-white border-0 pt-3 px-4">
+                                <h6 class="fw-bold mb-0 text-dark">Your Submitted Rating</h6>
+                            </div>
+                            <div class="card-body px-4 pb-4 pt-2">
+                                <div class="rating-display text-warning fs-4 mb-2">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <span class="star-display @(i <= Model.Rating.Score ? "filled" : "")">★</span>
+                                    }
+                                    <span class="ms-2 fs-6 text-dark fw-bold">@Model.Rating.Score / 5</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(Model.Rating.Comment))
+                                {
+                                    <p class="text-muted small mb-0 fst-italic">"@Model.Rating.Comment"</p>
+                                }
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
-        }
+        </main>
     </div>
 </div>
 
+<style>
+.citizen-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+.status-badge.pending { background-color: #dc3545 !important; color: #fff; }
+.status-badge.inprogress { background-color: #ffc107 !important; color: #000; }
+.status-badge.fixed { background-color: #198754 !important; color: #fff; }
+.star { cursor: pointer; color: #cbd5e1; transition: color 0.2s; }
+.star:hover, .star.selected { color: #f59e0b; }
+.star-display { color: #cbd5e1; }
+.star-display.filled { color: #f59e0b; }
+</style>
+
 @section Scripts {
 <script>
-    let currentRating = 0;
-    
+    let selectedRating = 0;
+
     $(document).ready(function() {
         loadComments();
         
-        // Rating stars interaction (only for interactive rating form)
-        $('#ratingForm .star').click(function() {
-            currentRating = $(this).data('rating');
-            $('#ratingForm .star').removeClass('filled');
-            $('#ratingForm .star').slice(0, currentRating).addClass('filled');
+        $('.rating .star').click(function() {
+            selectedRating = $(this).data('rating');
+            $('.rating .star').each(function() {
+                if ($(this).data('rating') <= selectedRating) {
+                    $(this).addClass('selected');
+                } else {
+                    $(this).removeClass('selected');
+                }
+            });
         });
         
-        $('#ratingForm .star').hover(function() {
-            const rating = $(this).data('rating');
-            $('#ratingForm .star').removeClass('filled');
-            $('#ratingForm .star').slice(0, rating).addClass('filled');
-        }, function() {
-            $('#ratingForm .star').removeClass('filled');
-            $('#ratingForm .star').slice(0, currentRating).addClass('filled');
-        });
-        
-        // Comment form submission
         $('#commentForm').submit(function(e) {
             e.preventDefault();
             submitComment();
@@ -248,61 +309,33 @@
         commentsList.empty();
         
         if (comments.length === 0) {
-            commentsList.append('<p class="text-muted">No comments yet.</p>');
+            commentsList.append('<p class="text-muted small text-center py-3">No updates or comments yet.</p>');
             return;
         }
         
-        // Add comments
         comments.forEach(function(comment) {
-            const isInternal = !comment.visibleToUser;
-            const roleBadge = comment.authorRole === 'User' ? 'badge-secondary' : 'badge-primary';
+            const roleBadge = comment.authorRole === 'User' ? 'bg-secondary' : 'bg-primary';
             
             commentsList.append(`
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="mb-0">
-                                ${isInternal ? 'Internal Note' : 'Comment'} 
-                                <span class="badge ${roleBadge}">${comment.authorRole}</span>
-                            </h6>
-                            <small class="text-muted">${new Date(comment.createdAt).toLocaleString()}</small>
+                <div class="card border rounded-3 p-3 bg-white shadow-sm">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${roleBadge} rounded-pill">${comment.authorRole}</span>
+                            <strong class="text-dark small">${comment.authorName}</strong>
                         </div>
-                        <p class="mb-2">${comment.content}</p>
-                        <small class="text-muted">By: ${comment.authorName}</small>
-                        ${comment.attachments.length > 0 ? displayAttachments(comment.attachments) : ''}
+                        <small class="text-muted">${new Date(comment.createdAt).toLocaleString()}</small>
                     </div>
+                    <p class="mb-2 text-dark small">${comment.content}</p>
                 </div>
             `);
         });
-    }
-    
-    function displayAttachments(attachments) {
-        let html = '<div class="mt-2"><strong>Attachments:</strong><br>';
-        attachments.forEach(function(attachment) {
-            if (attachment.contentType.startsWith('image/')) {
-                html += `<a href="${attachment.filePath}" target="_blank" class="me-2">
-                    <img src="${attachment.filePath}" style="max-width: 100px; max-height: 100px;" class="img-thumbnail" />
-                </a>`;
-            } else {
-                html += `<a href="${attachment.filePath}" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
-                    <i class="fas fa-file"></i> ${attachment.fileName}
-                </a>`;
-            }
-        });
-        html += '</div>';
-        return html;
     }
     
     function submitComment() {
         const formData = new FormData();
         formData.append('complaintId', $('#complaintId').val());
         formData.append('content', $('#commentContent').val());
-        formData.append('visibleToUser', $('#visibleToUser').is(':checked'));
-        
-        const attachments = $('#attachments')[0].files;
-        for (let i = 0; i < attachments.length; i++) {
-            formData.append('attachments', attachments[i]);
-        }
+        formData.append('visibleToUser', true);
         
         $.ajax({
             url: '/Comment/Create',
@@ -313,7 +346,6 @@
             success: function(response) {
                 if (response.success) {
                     $('#commentContent').val('');
-                    $('#attachments').val('');
                     loadComments();
                 } else {
                     alert('Error: ' + response.message);
@@ -322,25 +354,19 @@
         });
     }
     
-    function updateStatus(complaintId, status) {
-        $.post('/Admin/UpdateStatus', { id: complaintId, status: status })
-            .done(function() {
-                location.reload();
-            });
-    }
-    
     function submitRating(complaintId) {
-        if (currentRating === 0) {
-            alert('Please select a rating');
+        if (selectedRating === 0) {
+            alert('Please select a star rating first.');
             return;
         }
         
-        $.post('/Complaint/Rate', {
+        $.post('/Complaint/SubmitRating', {
             complaintId: complaintId,
-            score: currentRating,
+            score: selectedRating,
             comment: $('#ratingComment').val()
         }).done(function(response) {
             if (response.success) {
+                alert('Thank you! Your rating has been recorded.');
                 location.reload();
             } else {
                 alert('Error: ' + response.message);
@@ -348,54 +374,4 @@
         });
     }
 </script>
-
-<style>
-
-.rating .star {
-    font-size: 24px;
-    color: #ddd;
-    cursor: pointer;
-    transition: color 0.2s;
-    user-select: none;
-}
-
-.rating .star:hover {
-    color: #ffc107;
-}
-
-.rating .star.filled {
-    color: #ffc107;
-}
-
-.rating-display .star-display {
-    font-size: 20px;
-    color: #ddd;
-    cursor: default;
-    user-select: none;
-    pointer-events: none;
-}
-
-.rating-display .star-display.filled {
-    color: #ffc107;
-}
-
-.status-badge {
-    font-size: 0.8em;
-}
-
-.status-badge.pending {
-    background-color: #ffc107;
-    color: #000;
-}
-
-.status-badge.inprogress {
-    background-color: #17a2b8;
-    color: #fff;
-}
-
-.status-badge.fixed {
-    background-color: #28a745;
-    color: #fff;
-}
-</style>
 }

@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using JanSamadhan.Data;
 using JanSamadhan.Models;
 using JanSamadhan.Services;
@@ -67,16 +67,24 @@ namespace JanSamadhan.Controllers
                 return View();
             }
 
+            var role = !string.IsNullOrEmpty(user.Role) ? user.Role : "User";
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim(ClaimTypes.Name, user.Name),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, "User")
+                new Claim(ClaimTypes.Role, role)
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+
+            if (role == "Technician")
+            {
+                return RedirectToAction("Dashboard", "Technician");
+            }
+
             return RedirectToAction("Index", "Complaint");
         }
 
@@ -117,23 +125,35 @@ namespace JanSamadhan.Controllers
         public async Task<IActionResult> Profile()
         {
             var role = User.FindFirstValue(ClaimTypes.Role);
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(idClaim, out int userId);
+            var email = User.FindFirstValue(ClaimTypes.Email);
             
             if (role == "Admin")
             {
-                var admin = await _db.Admins.FindAsync(userId);
+                var admin = await _db.Admins.FirstOrDefaultAsync(a => a.AdminId == userId || (!string.IsNullOrEmpty(email) && a.Email == email));
+                if (admin == null)
+                {
+                    admin = new Admin
+                    {
+                        AdminId = userId > 0 ? userId : 1,
+                        Name = User.FindFirstValue(ClaimTypes.Name) ?? "Administrator",
+                        Email = email ?? "admin@local",
+                        PasswordHash = "N/A"
+                    };
+                }
                 return View("AdminProfile", admin);
             }
             else if (role == "Technician")
             {
                 var technician = await _db.Users
                     .Include(u => u.Department)
-                    .FirstOrDefaultAsync(u => u.UserId == userId);
+                    .FirstOrDefaultAsync(u => u.UserId == userId || (!string.IsNullOrEmpty(email) && u.Email == email));
                 return View("TechnicianProfile", technician);
             }
             else
             {
-                var user = await _db.Users.FindAsync(userId);
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId || (!string.IsNullOrEmpty(email) && u.Email == email));
                 return View("UserProfile", user);
             }
         }

@@ -1,17 +1,178 @@
-﻿@model IEnumerable<JanSamadhan.Models.Badge>
-<h2>Badges</h2>
-<div class="row">
-@foreach (var b in Model)
-{
-    <div class="col-md-3">
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">@b.LevelName</h5>
-                <p class="card-text">Requires @b.PointsRequired points</p>
+@model IEnumerable<JanSamadhan.Models.Badge>
+@{
+    ViewData["Title"] = "Civic Badges & Rewards - JanSamadhan";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
+}
+
+<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
+
+            <nav class="nav flex-column gap-1">
+                <a href="/Complaint" class="sidebar-link">
+                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
+                </a>
+                <a href="/Complaint/Create" class="sidebar-link">
+                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
+                </a>
+                <a href="/Home/Nearby" class="sidebar-link">
+                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
+                </a>
+                <a href="/Badge" class="sidebar-link active">
+                    <i class="fas fa-medal me-3"></i> Badges & Rewards
+                </a>
+                <a href="/Home/Scoreboard" class="sidebar-link">
+                    <i class="fas fa-trophy me-3"></i> Leaderboard
+                </a>
+            </nav>
+        </div>
+
+        <div class="pt-3 border-top">
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
             </div>
         </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-4">
+                <a href="/Complaint" class="top-tab-link">My Complaints</a>
+                <a href="/Complaint/Create" class="top-tab-link text-success fw-bold">+ Report Issue</a>
+                <a href="/Home/Nearby" class="top-tab-link">Nearby Map</a>
+                <a href="/Badge" class="top-tab-link active">Badges & Rewards</a>
+                <a href="/Home/Scoreboard" class="top-tab-link">Leaderboard</a>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
+            </div>
+        </header>
+
+        <main class="p-4 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bolder text-dark mb-0">Civic Tier Badges & Milestone Rewards</h2>
+                    <p class="text-muted mb-0 small">Earn civic points for reporting verified issues, giving resolution feedback, and climbing ranks</p>
+                </div>
+            </div>
+
+            <!-- How Points Work Banner -->
+            <div class="card border rounded-4 p-4 shadow-sm bg-white mb-4">
+                <h5 class="fw-bold mb-3 text-dark"><i class="fas fa-award text-warning me-2"></i>How to Earn Civic Points</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-primary rounded-pill">+10 Pts</span>
+                                <strong class="text-dark small">Report a Grievance</strong>
+                            </div>
+                            <small class="text-muted">Earn points each time you report a photo-verified street anomaly.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-success rounded-pill">+5 Pts</span>
+                                <strong class="text-dark small">Rate Resolution Proof</strong>
+                            </div>
+                            <small class="text-muted">Provide star feedback once field work is marked as fixed.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-warning text-dark rounded-pill">Top Rank</span>
+                                <strong class="text-dark small">City Leaderboard</strong>
+                            </div>
+                            <small class="text-muted">Climb city leaderboards and unlock municipal civic recognition.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Badge Tiers Grid -->
+            <h5 class="fw-bold text-dark mb-3">Milestone Tiers</h5>
+            <div class="row g-4">
+                @foreach (var b in Model)
+                {
+                    var isGold = b.LevelName == "Gold";
+                    var isSilver = b.LevelName == "Silver";
+                    var isPlatinum = b.LevelName == "Platinum" || b.LevelName == "Diamond";
+                    var iconClass = isGold ? "fa-crown text-warning" : (isSilver ? "fa-medal text-secondary" : (isPlatinum ? "fa-gem text-info" : "fa-shield-alt text-dark"));
+
+                    <div class="col-lg-3 col-sm-6">
+                        <div class="card h-100 border rounded-4 p-4 text-center bg-white shadow-sm">
+                            <div class="mb-3">
+                                <i class="fas @iconClass fa-3x"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-1">@b.LevelName</h4>
+                            <p class="text-muted small mb-3">Requires <span class="badge bg-light text-dark border fw-bold">@b.PointsRequired Points</span></p>
+                            <div class="mt-auto">
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 small fw-semibold">
+                                    Official Municipal Badge
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </main>
     </div>
-}
 </div>
 
-
+<style>
+.citizen-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+.top-tab-link {
+    text-decoration: none;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.top-tab-link:hover {
+    color: #0f172a;
+}
+.top-tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+</style>

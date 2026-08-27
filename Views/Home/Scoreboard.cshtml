@@ -1,26 +1,165 @@
 @model IEnumerable<dynamic>
-<h2>User Scoreboard</h2>
-<table class="table table-striped table-bordered">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Badge</th>
-            <th>Points</th>
-        </tr>
-    </thead>
-    <tbody>
-        @{ var i = 1; }
-        @foreach (var u in Model)
-        {
-            <tr>
-                <td>@i</td>
-                <td>@u.Name</td>
-                <td>@u.BadgeLevel</td>
-                <td>@u.Points</td>
-            </tr>
-            i++;
-        }
-    </tbody>
-</table>
+@{
+    ViewData["Title"] = "Citizen Leaderboard - JanSamadhan";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
+}
 
+<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
+
+            <nav class="nav flex-column gap-1">
+                <a href="/Complaint" class="sidebar-link">
+                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
+                </a>
+                <a href="/Complaint/Create" class="sidebar-link">
+                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
+                </a>
+                <a href="/Home/Nearby" class="sidebar-link">
+                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
+                </a>
+                <a href="/Badge" class="sidebar-link">
+                    <i class="fas fa-medal me-3"></i> Badges & Rewards
+                </a>
+                <a href="/Home/Scoreboard" class="sidebar-link active">
+                    <i class="fas fa-trophy me-3"></i> Leaderboard
+                </a>
+            </nav>
+        </div>
+
+        <div class="pt-3 border-top">
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-4">
+                <a href="/Complaint" class="top-tab-link">My Complaints</a>
+                <a href="/Complaint/Create" class="top-tab-link text-success fw-bold">+ Report Issue</a>
+                <a href="/Home/Nearby" class="top-tab-link">Nearby Map</a>
+                <a href="/Badge" class="top-tab-link">Badges</a>
+                <a href="/Home/Scoreboard" class="top-tab-link active">Leaderboard</a>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
+            </div>
+        </header>
+
+        <main class="p-4 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bolder text-dark mb-0">City-Wide Citizen Leaderboard</h2>
+                    <p class="text-muted mb-0 small">Top active citizens contributing to clean and safe city infrastructure</p>
+                </div>
+            </div>
+
+            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light small text-muted">
+                            <tr>
+                                <th class="ps-4" style="width: 80px;">Rank</th>
+                                <th>Citizen Name</th>
+                                <th>Badge Tier</th>
+                                <th class="pe-4 text-end">Civic Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ var rank = 1; }
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="fas fa-trophy fa-3x mb-2 opacity-50"></i>
+                                        <p class="mb-0">No active scores yet.</p>
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var u in Model)
+                            {
+                                var badgeColor = rank == 1 ? "bg-warning text-dark" : (rank == 2 ? "bg-secondary text-white" : (rank == 3 ? "bg-dark text-white" : "bg-light text-dark border"));
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="badge @badgeColor rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700;">
+                                            #@rank
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-dark">@u.Name</td>
+                                    <td>
+                                        <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill px-3 py-1 fw-semibold">
+                                            <i class="fas fa-award me-1 text-warning"></i>@(u.BadgeLevel ?? "Bronze")
+                                        </span>
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <span class="fw-bold text-primary fs-6">@u.Points pts</span>
+                                    </td>
+                                </tr>
+                                rank++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+.citizen-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+.top-tab-link {
+    text-decoration: none;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.top-tab-link:hover {
+    color: #0f172a;
+}
+.top-tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+</style>

@@ -1,4 +1,4 @@
-﻿using JanSamadhan.Data;
+using JanSamadhan.Data;
 using JanSamadhan.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -165,19 +165,24 @@ namespace JanSamadhan.Controllers
 
                 // Remove related data
                 var complaints = await _db.Complaints.Where(c => c.UserId == userId).ToListAsync();
-                var assignedComplaints = await _db.Complaints.Where(c => c.AssignedToUserId == userId).ToListAsync();
-                var ratings = await _db.ComplaintRatings.Where(r => r.UserId == userId).ToListAsync();
-                var comments = await _db.Comments.Where(c => c.AuthorId == userId).ToListAsync();
+                var complaintIds = complaints.Select(c => c.ComplaintId).ToList();
 
-                // Update assigned complaints to remove assignment
+                var photos = await _db.TechnicianPhotos.Where(p => complaintIds.Contains(p.ComplaintId)).ToListAsync();
+                var assignments = await _db.ComplaintAssignments.Where(a => complaintIds.Contains(a.ComplaintId) || a.AssignedToUserId == userId || a.AssignedByUserId == userId).ToListAsync();
+                var ratings = await _db.ComplaintRatings.Where(r => r.UserId == userId || complaintIds.Contains(r.ComplaintId)).ToListAsync();
+                var comments = await _db.Comments.Where(c => c.AuthorId == userId || complaintIds.Contains(c.ComplaintId)).ToListAsync();
+
+                var assignedComplaints = await _db.Complaints.Where(c => c.AssignedToUserId == userId).ToListAsync();
                 foreach (var complaint in assignedComplaints)
                 {
                     complaint.AssignedToUserId = null;
                 }
 
-                _db.Complaints.RemoveRange(complaints);
+                _db.TechnicianPhotos.RemoveRange(photos);
+                _db.ComplaintAssignments.RemoveRange(assignments);
                 _db.ComplaintRatings.RemoveRange(ratings);
                 _db.Comments.RemoveRange(comments);
+                _db.Complaints.RemoveRange(complaints);
                 _db.Users.Remove(user);
 
                 await _db.SaveChangesAsync();

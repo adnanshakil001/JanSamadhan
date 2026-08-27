@@ -1,83 +1,215 @@
 @{
-    ViewData["Title"] = "Complaints Map";
+    ViewData["Title"] = "Geospatial Map View - Admin";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
 }
 
-<div class="row">
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-header">
-                <h6>Map Controls</h6>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <h6>Layers</h6>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="showMarkers" checked>
-                        <label class="form-check-label" for="showMarkers">Markers</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="showClusters" checked>
-                        <label class="form-check-label" for="showClusters">Clusters</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="showHeatmap">
-                        <label class="form-check-label" for="showHeatmap">Heatmap</label>
-                    </div>
-                </div>
+<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
 
-                <div class="mb-3">
-                    <h6>Filters</h6>
-                    <div class="mb-2">
-                        <label class="form-label">Status</label>
-                        <select class="form-select form-select-sm" id="statusFilter">
-                            <option value="">All</option>
-                            <option value="Pending">Pending</option>
-                            <option value="InProgress">In Progress</option>
-                            <option value="Fixed">Fixed</option>
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">Department</label>
-                        <select class="form-select form-select-sm" id="departmentFilter">
-                            <option value="">All</option>
-                            <option value="1">Public Works</option>
-                            <option value="2">Traffic Management</option>
-                            <option value="3">Utilities</option>
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">From Date</label>
-                        <input type="date" class="form-control form-control-sm" id="fromDate">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">To Date</label>
-                        <input type="date" class="form-control form-control-sm" id="toDate">
-                    </div>
-                    <button class="btn btn-primary btn-sm" onclick="applyFilters()">Apply Filters</button>
-                </div>
+            <nav class="nav flex-column gap-1">
+                <a href="/Admin" class="sidebar-link">
+                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
+                </a>
+                <a href="/Map/AdminMap" class="sidebar-link active">
+                    <i class="fas fa-map-marked-alt me-3"></i> Map View
+                </a>
+                <a href="/Role" class="sidebar-link">
+                    <i class="fas fa-users-cog me-3"></i> Role Management
+                </a>
+                <a href="/Admin/TechnicianScoreboard" class="sidebar-link">
+                    <i class="fas fa-chart-line me-3"></i> Technician Board
+                </a>
+                <a href="/Admin/Scoreboard" class="sidebar-link">
+                    <i class="fas fa-medal me-3"></i> User Scoreboard
+                </a>
+            </nav>
+        </div>
 
-                <div class="mb-3">
-                    <h6>Legend</h6>
-                    <div class="legend-item">
-                        <span class="legend-color" style="background-color: #ffc107;"></span>
-                        <span>Pending</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color" style="background-color: #17a2b8;"></span>
-                        <span>In Progress</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color" style="background-color: #28a745;"></span>
-                        <span>Fixed</span>
-                    </div>
-                </div>
+        <div class="pt-3 border-top">
+            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                <i class="fas fa-user-plus"></i> + Add Technician
+            </a>
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
             </div>
         </div>
-    </div>
-    <div class="col-md-9">
-        <div id="map" style="height: 600px; border: 1px solid #ccc;"></div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-4">
+                <a href="/Admin" class="top-tab-link">Admin Dashboard</a>
+                <a href="/Admin/CreateTechnician" class="top-tab-link text-success fw-bold">+ Create Technician</a>
+                <a href="/Role" class="top-tab-link">Role Management</a>
+                <a href="/Map/AdminMap" class="top-tab-link active">Map View</a>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
+            </div>
+        </header>
+
+        <main class="p-4 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bolder text-dark mb-0">City-Wide Geospatial Intelligence Map</h2>
+                    <p class="text-muted mb-0 small">Interactive clustering, density heatmaps, and spatial triage</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Map Controls & Filters Sidebar -->
+                <div class="col-lg-3">
+                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
+                        <div class="card-header bg-white border-0 pt-3 px-4">
+                            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-layer-group me-2 text-primary"></i>Map Layers</h6>
+                        </div>
+                        <div class="card-body px-4 pb-3 pt-1">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="showMarkers" checked>
+                                <label class="form-check-label small fw-semibold text-dark" for="showMarkers">Individual Markers</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="showClusters" checked>
+                                <label class="form-check-label small fw-semibold text-dark" for="showClusters">Density Clusters</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="showHeatmap">
+                                <label class="form-check-label small fw-semibold text-dark" for="showHeatmap">Heatmap View</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
+                        <div class="card-header bg-white border-0 pt-3 px-4">
+                            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-filter me-2 text-primary"></i>Spatial Filters</h6>
+                        </div>
+                        <div class="card-body px-4 pb-4 pt-1">
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted mb-1">Status</label>
+                                <select class="form-select form-select-sm rounded-3" id="statusFilter">
+                                    <option value="">All Statuses</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="InProgress">In Progress</option>
+                                    <option value="Fixed">Fixed</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted mb-1">Department</label>
+                                <select class="form-select form-select-sm rounded-3" id="departmentFilter">
+                                    <option value="">All Departments</option>
+                                    <option value="1">Public Works</option>
+                                    <option value="2">Traffic Management</option>
+                                    <option value="3">Utilities</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted mb-1">From Date</label>
+                                <input type="date" class="form-control form-control-sm rounded-3" id="fromDate">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted mb-1">To Date</label>
+                                <input type="date" class="form-control form-control-sm rounded-3" id="toDate">
+                            </div>
+                            <button class="btn btn-primary btn-sm w-100 rounded-3 fw-semibold" onclick="applyFilters()">
+                                <i class="fas fa-sync-alt me-1"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Map Legend -->
+                    <div class="card border rounded-4 shadow-sm bg-white">
+                        <div class="card-header bg-white border-0 pt-3 px-4">
+                            <h6 class="fw-bold mb-0 text-dark">Status Legend</h6>
+                        </div>
+                        <div class="card-body px-4 pb-3 pt-1">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #dc3545;"></span>
+                                <span class="small fw-semibold text-dark">Pending Redressal</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #ffc107;"></span>
+                                <span class="small fw-semibold text-dark">Work In Progress</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #198754;"></span>
+                                <span class="small fw-semibold text-dark">Fixed & Resolved</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Interactive Map Canvas -->
+                <div class="col-lg-9">
+                    <div class="card border rounded-4 shadow-sm bg-white overflow-hidden p-2">
+                        <div id="map" style="height: 680px; width: 100%; border-radius: 12px;"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 </div>
+
+<style>
+.admin-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+.top-tab-link {
+    text-decoration: none;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.top-tab-link:hover {
+    color: #0f172a;
+}
+.top-tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+.custom-marker {
+    background: transparent !important;
+    border: none !important;
+}
+</style>
 
 @section Scripts {
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -98,7 +230,6 @@
         initializeMap();
         loadMapData();
         
-        // Layer controls
         $('#showMarkers').change(function() {
             if ($(this).is(':checked')) {
                 markersLayer.addTo(map);
@@ -127,15 +258,13 @@
     });
 
     function initializeMap() {
-        // Initialize map centered on a default location (you can change this)
-        map = L.map('map').setView([20.5937, 78.9629], 5); // India center
+        map = L.map('map').setView([23.2599, 77.4126], 12);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Initialize layers
         markersLayer = L.layerGroup();
         clustersLayer = L.markerClusterGroup({
             chunkedLoading: true,
@@ -167,56 +296,55 @@
     }
 
     function displayMarkers(features) {
-        // Clear existing markers
         markersLayer.clearLayers();
         clustersLayer.clearLayers();
+
+        const bounds = [];
 
         features.forEach(function(feature) {
             const coords = feature.geometry.coordinates;
             const props = feature.properties;
             
             const marker = L.marker([coords[1], coords[0]]);
-            
-            // Store complaint ID in marker data for easy removal
             marker.complaintId = props.id;
             
-            const statusColor = getStatusColor(props.status);
+            const statusColor = props.status === 'Fixed' ? '#198754' : (props.status === 'InProgress' ? '#ffc107' : '#dc3545');
             const icon = L.divIcon({
                 className: 'custom-marker',
-                html: `<div style="background-color: ${statusColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                html: `<div style="background-color: ${statusColor}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9]
             });
             
             marker.setIcon(icon);
             
             const popupContent = `
-                <div>
-                    <h6>Complaint #${props.id}</h6>
-                    <p><strong>Type:</strong> ${props.type}</p>
-                    <p><strong>Status:</strong> <span class="badge" style="background-color: ${statusColor}">${props.status}</span></p>
-                    <p><strong>User:</strong> ${props.userName}</p>
-                    <p><strong>Created:</strong> ${new Date(props.createdAt).toLocaleDateString()}</p>
-                    ${props.photoUrl ? `<img src="${props.photoUrl}" style="max-width: 100px; max-height: 100px;" class="img-thumbnail mt-2">` : ''}
+                <div class="p-1">
+                    <h6 class="fw-bold mb-1">Complaint #${props.id}</h6>
+                    <p class="small mb-1"><strong>Type:</strong> ${props.type}</p>
+                    <p class="small mb-1"><strong>Status:</strong> <span class="badge" style="background-color: ${statusColor}">${props.status}</span></p>
+                    <p class="small mb-1"><strong>Reported By:</strong> ${props.userName}</p>
                     <div class="mt-2">
-                        <a href="/Admin/Details/${props.id}" class="btn btn-sm btn-primary">View Details</a>
-                        <button class="btn btn-sm btn-danger" onclick="removeComplaint(${props.id})">Remove</button>
+                        <a href="/Admin/Details/${props.id}" class="btn btn-sm btn-primary rounded-pill px-3">View Details</a>
                     </div>
                 </div>
             `;
             
             marker.bindPopup(popupContent);
-            
             markersLayer.addLayer(marker);
             clustersLayer.addLayer(marker);
+            bounds.push([coords[1], coords[0]]);
         });
 
-        // Add layers to map
         if ($('#showMarkers').is(':checked')) {
             markersLayer.addTo(map);
         }
         if ($('#showClusters').is(':checked')) {
             clustersLayer.addTo(map);
+        }
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [40, 40] });
         }
     }
 
@@ -227,7 +355,7 @@
 
         const heatmapData = currentData.map(function(feature) {
             const coords = feature.geometry.coordinates;
-            return [coords[1], coords[0], 1]; // [lat, lng, intensity]
+            return [coords[1], coords[0], 1];
         });
 
         heatmapLayer = L.heatLayer(heatmapData, {
@@ -239,88 +367,8 @@
         heatmapLayer.addTo(map);
     }
 
-    function getStatusColor(status) {
-        switch (status) {
-            case 'Pending': return '#ffc107';
-            case 'InProgress': return '#17a2b8';
-            case 'Fixed': return '#28a745';
-            default: return '#6c757d';
-        }
-    }
-
     function applyFilters() {
         loadMapData();
     }
-
-    function removeComplaint(complaintId) {
-        if (confirm('Are you sure you want to remove this complaint?')) {
-            // Remove from database
-            $.ajax({
-                url: `/Admin/DeleteComplaint/${complaintId}`,
-                type: 'DELETE',
-                success: function(response) {
-                    if (response.success) {
-                        // Remove marker from both layers
-                        removeMarkerFromLayers(complaintId);
-                        
-                        // Update current data
-                        currentData = currentData.filter(feature => feature.properties.id !== complaintId);
-                        
-                        alert('Complaint removed successfully');
-                    } else {
-                        alert('Error removing complaint: ' + response.message);
-                    }
-                },
-                error: function() {
-                    alert('Error removing complaint');
-                }
-            });
-        }
-    }
-
-    function removeMarkerFromLayers(complaintId) {
-        let markerToRemove = null;
-        
-        // Find and remove from markers layer
-        markersLayer.eachLayer(function(marker) {
-            if (marker.complaintId === complaintId) {
-                markerToRemove = marker;
-                markersLayer.removeLayer(marker);
-            }
-        });
-        
-        // Remove from clusters layer
-        if (markerToRemove) {
-            clustersLayer.removeLayer(markerToRemove);
-        }
-        
-        // Force cluster refresh to update counts
-        if ($('#showClusters').is(':checked')) {
-            // Temporarily remove and re-add the cluster layer to force refresh
-            map.removeLayer(clustersLayer);
-            clustersLayer.addTo(map);
-        }
-    }
 </script>
-
-<style>
-.legend-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.legend-color {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    margin-right: 8px;
-    border: 1px solid #ccc;
-}
-
-.custom-marker {
-    background: transparent !important;
-    border: none !important;
-}
-</style>
 }

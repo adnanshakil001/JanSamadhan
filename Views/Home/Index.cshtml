@@ -1,281 +1,426 @@
 @{
-    ViewData["Title"] = "Home";
-    ViewData["IsLandingPage"] = true;
+    ViewData["Title"] = "JanSamadhan - Empowering Cities through Digital Clarity";
+    ViewData["HideDefaultNav"] = true;
     ViewData["FullWidth"] = true;
+    var isAuthenticated = Context.User?.Identity?.IsAuthenticated ?? false;
+    var isAdmin = Context.User?.IsInRole("Admin") ?? false;
+    var isTechnician = Context.User?.IsInRole("Technician") ?? false;
 }
 
-<!-- Hero Section (Mockup 2) -->
-<section class="bg-grid-pattern py-5 text-center border-bottom position-relative overflow-hidden" style="padding-top: 5rem !important; padding-bottom: 6rem !important;">
-    <div class="container py-lg-4 position-relative" style="z-index: 2;">
-        <!-- Pill Badge -->
-        <div class="d-flex justify-content-center">
-            <div class="landing-pill-badge">
-                <i class="fa-solid fa-landmark text-primary"></i>
-                <span>Civic Redressal Platform</span>
-            </div>
-        </div>
-
-        <!-- Main Headline -->
-        <h1 class="hero-title mx-auto" style="max-width: 850px;">
-            Empowering Cities through<br class="d-none d-md-inline"> Digital Clarity
-        </h1>
-
-        <!-- Subtitle -->
-        <p class="hero-subtitle">
-            Bridging the gap between citizens and municipal authorities with a transparent, geospatial-first reporting and resolution system.
-        </p>
-
-        <!-- CTA Action Buttons -->
-        <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
-            <a href="/Account/Register" class="btn-landing-primary">
-                <span>Report a Problem</span>
-                <i class="fa-solid fa-arrow-right"></i>
+<div class="landing-page-root">
+    <!-- Top Navigation Bar -->
+    <header class="landing-nav sticky-top bg-white border-bottom">
+        <div class="container-xl d-flex justify-content-between align-items-center py-3">
+            <a href="/" class="d-flex align-items-center text-decoration-none text-dark fw-bold fs-4">
+                <i class="fas fa-landmark text-primary me-2"></i>JanSamadhan
             </a>
-            <a href="#how-it-works" class="btn-landing-outline">
-                <i class="fa-solid fa-layer-group me-1"></i>
-                <span>Platform Overview</span>
+            
+            <nav class="d-none d-md-flex align-items-center gap-4">
+                <a href="#features" class="nav-link-custom">Features</a>
+                <a href="#how-it-works" class="nav-link-custom">How it Works</a>
+                <a href="#stakeholders" class="nav-link-custom">For Stakeholders</a>
+                <a href="#contact" class="nav-link-custom">Contact</a>
+            </nav>
+
+            <div class="d-flex align-items-center gap-2">
+                @if (isAuthenticated)
+                {
+                    @if (isAdmin)
+                    {
+                        <a href="/Admin" class="btn btn-outline-dark btn-sm rounded-pill px-3">Admin Dashboard</a>
+                    }
+                    else if (isTechnician)
+                    {
+                        <a href="/Technician/Dashboard" class="btn btn-outline-dark btn-sm rounded-pill px-3">Technician Dashboard</a>
+                    }
+                    else
+                    {
+                        <a href="/Complaint" class="btn btn-outline-dark btn-sm rounded-pill px-3">My Complaints</a>
+                    }
+                    <a href="/Account/Logout" class="btn btn-dark btn-sm rounded-pill px-3">Logout</a>
+                }
+                else
+                {
+                    <a href="/Account/Login" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                        Citizen Login
+                    </a>
+                    <a href="/Account/AdminLogin" class="btn btn-outline-dark btn-sm rounded-pill px-3 fw-semibold">
+                        <i class="fas fa-user-shield me-1"></i> Admin Login
+                    </a>
+                    <a href="/Complaint/Create" class="btn btn-dark btn-sm rounded-pill px-3 fw-semibold">
+                        Report Problem
+                    </a>
+                }
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center py-5 position-relative overflow-hidden">
+        <div class="hero-grid-bg"></div>
+        <div class="container position-relative py-5">
+            <!-- Pill Badge -->
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-4 rounded-pill hero-badge">
+                <i class="fas fa-university text-primary fs-6"></i>
+                <span class="small fw-semibold text-secondary">Civic Redressal Platform</span>
+            </div>
+
+            <!-- Headline -->
+            <h1 class="display-4 fw-bolder text-dark mb-3 hero-title">
+                Empowering Cities through Digital<br class="d-none d-md-block" /> Clarity
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="lead text-secondary mx-auto mb-4 hero-subtitle" style="max-width: 680px;">
+                Bridging the gap between citizens and municipal authorities with a transparent, geospatial-first reporting and resolution system.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="d-flex justify-content-center gap-3 flex-wrap pt-2">
+                <a href="/Complaint/Create" class="btn btn-dark btn-lg rounded-pill px-4 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 hero-btn-main">
+                    Report a Problem <i class="fas fa-arrow-right fs-6"></i>
+                </a>
+                <a href="#features" class="btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white shadow-sm">
+                    Platform Overview
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- For Every Stakeholder Section -->
+    <section id="stakeholders" class="py-5 bg-white border-top">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold text-dark mb-2">For Every Stakeholder</h2>
+                <p class="text-muted">Designed for seamless collaboration across the civic ecosystem.</p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Citizens Card -->
+                <div class="col-lg-5 col-md-6">
+                    <div class="card h-100 stakeholder-card border rounded-4 p-4 shadow-sm">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                                <i class="fas fa-users fs-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold mb-0 text-dark">Citizens</h4>
+                            </div>
+                        </div>
+                        <ul class="list-unstyled d-flex flex-column gap-3 mb-0 text-secondary">
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-primary mt-1"></i>
+                                <span>Easy 1-click issue reporting with photo upload.</span>
+                            </li>
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-primary mt-1"></i>
+                                <span>Real-time status tracking and notifications.</span>
+                            </li>
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-primary mt-1"></i>
+                                <span>Interactive map view of local civic issues.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Municipal Officials Card -->
+                <div class="col-lg-5 col-md-6">
+                    <div class="card h-100 stakeholder-card border rounded-4 p-4 shadow-sm">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="icon-circle bg-dark bg-opacity-10 text-dark">
+                                <i class="fas fa-building-columns fs-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold mb-0 text-dark">Municipal Officials</h4>
+                            </div>
+                        </div>
+                        <ul class="list-unstyled d-flex flex-column gap-3 mb-0 text-secondary">
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-dark mt-1"></i>
+                                <span>Comprehensive data analytics and dashboard.</span>
+                            </li>
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-dark mt-1"></i>
+                                <span>Efficient field workforce dispatch and management.</span>
+                            </li>
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-dark mt-1"></i>
+                                <span>SLA tracking and automated escalation protocols.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-5 bg-light border-top">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold text-dark mb-2">How it Works</h2>
+                <p class="text-muted">A transparent, 4-step process to civic resolution.</p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Step 1 -->
+                <div class="col-lg-3 col-sm-6">
+                    <div class="card step-card h-100 border rounded-4 p-4 text-center bg-white shadow-sm">
+                        <div class="step-number mb-3 mx-auto">1</div>
+                        <div class="step-icon text-primary mb-3"><i class="fas fa-camera fs-3"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">Report</h5>
+                        <p class="text-muted small mb-0">Snap a photo and tag the location.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="col-lg-3 col-sm-6">
+                    <div class="card step-card h-100 border rounded-4 p-4 text-center bg-white shadow-sm">
+                        <div class="step-number mb-3 mx-auto">2</div>
+                        <div class="step-icon text-warning mb-3"><i class="fas fa-route fs-3"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">Dispatch</h5>
+                        <p class="text-muted small mb-0">Auto-routing to the correct department.</p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="col-lg-3 col-sm-6">
+                    <div class="card step-card h-100 border rounded-4 p-4 text-center bg-white shadow-sm">
+                        <div class="step-number mb-3 mx-auto">3</div>
+                        <div class="step-icon text-info mb-3"><i class="fas fa-tools fs-3"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">Resolve</h5>
+                        <p class="text-muted small mb-0">Technician provides dual-photo proof.</p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="col-lg-3 col-sm-6">
+                    <div class="card step-card h-100 border rounded-4 p-4 text-center bg-white shadow-sm">
+                        <div class="step-number mb-3 mx-auto">4</div>
+                        <div class="step-icon text-success mb-3"><i class="fas fa-handshake fs-3"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">Close</h5>
+                        <p class="text-muted small mb-0">Citizen reviews and provides feedback.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Features Bento Grid -->
+    <section id="features" class="py-5 bg-white border-top">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold text-dark mb-2">Platform Features</h2>
+                <p class="text-muted">Built on a foundation of data, transparency, and accountability.</p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Geospatial Intelligence (Big Card) -->
+                <div class="col-lg-7">
+                    <div class="card feature-card h-100 border rounded-4 p-4 shadow-sm bg-light position-relative overflow-hidden">
+                        <div class="d-flex align-items-center gap-2 text-primary mb-2">
+                            <i class="fas fa-globe fs-5"></i>
+                            <h5 class="fw-bold mb-0 text-dark">Geospatial Intelligence</h5>
+                        </div>
+                        <p class="text-muted mb-4">Every grievance is mapped, allowing authorities to visualize hotspots and allocate resources efficiently.</p>
+                        
+                        <!-- Map Visual Simulation -->
+                        <div class="rounded-3 border overflow-hidden shadow-sm bg-white p-3 text-center">
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                                <span class="badge bg-danger rounded-pill">Pothole Hotspot</span>
+                                <span class="badge bg-success rounded-pill">Resolved Zone</span>
+                                <span class="badge bg-warning text-dark rounded-pill">In Progress</span>
+                            </div>
+                            <div class="position-relative map-mockup d-flex align-items-center justify-content-center py-4 bg-light rounded border">
+                                <i class="fas fa-map-marked-alt fa-3x text-secondary opacity-50"></i>
+                                <span class="position-absolute translate-middle p-2 bg-danger border border-light rounded-circle" style="top:30%; left:40%;"></span>
+                                <span class="position-absolute translate-middle p-2 bg-success border border-light rounded-circle" style="top:60%; left:65%;"></span>
+                                <span class="position-absolute translate-middle p-2 bg-warning border border-light rounded-circle" style="top:45%; left:55%;"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gamified Workforce -->
+                <div class="col-lg-5">
+                    <div class="card feature-card h-100 border rounded-4 p-4 shadow-sm bg-white">
+                        <div class="d-flex align-items-center gap-2 text-warning mb-2">
+                            <i class="fas fa-lightbulb fs-5"></i>
+                            <h5 class="fw-bold mb-0 text-dark">Gamified Workforce</h5>
+                        </div>
+                        <p class="text-muted mb-4">Motivating field technicians with performance badges, points, and leaderboards.</p>
+                        <div class="mt-auto">
+                            <a href="/Admin/TechnicianScoreboard" class="text-decoration-none fw-semibold text-primary d-inline-flex align-items-center gap-1">
+                                Learn more <i class="fas fa-arrow-right fs-6"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transparent Redressal -->
+                <div class="col-lg-5">
+                    <div class="card feature-card h-100 border rounded-4 p-4 shadow-sm bg-white">
+                        <div class="d-flex align-items-center gap-2 text-success mb-2">
+                            <i class="fas fa-shield-alt fs-5"></i>
+                            <h5 class="fw-bold mb-0 text-dark">Transparent Redressal</h5>
+                        </div>
+                        <p class="text-muted mb-4">Dual-photo proof ensures that work is actually completed before a ticket is closed.</p>
+                        <div class="mt-auto">
+                            <a href="/Home/Nearby" class="text-decoration-none fw-semibold text-primary d-inline-flex align-items-center gap-1">
+                                View Dashboard <i class="fas fa-arrow-right fs-6"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actionable Insights -->
+                <div class="col-lg-7">
+                    <div class="card feature-card h-100 border rounded-4 p-4 shadow-sm bg-light">
+                        <div class="d-flex align-items-center gap-2 text-secondary mb-2">
+                            <i class="fas fa-chart-bar fs-5"></i>
+                            <h5 class="fw-bold mb-0 text-dark">Actionable Insights</h5>
+                        </div>
+                        <p class="text-muted mb-3">Comprehensive reports on resolution times, department efficiency, and common civic issues.</p>
+                        <div class="row g-2 text-center">
+                            <div class="col-4">
+                                <div class="bg-white p-2 rounded border">
+                                    <div class="fw-bold text-dark fs-5">98.4%</div>
+                                    <small class="text-muted">Resolution Rate</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-white p-2 rounded border">
+                                    <div class="fw-bold text-primary fs-5">&lt; 24h</div>
+                                    <small class="text-muted">Avg Dispatch</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-white p-2 rounded border">
+                                    <div class="fw-bold text-success fs-5">4.8 ★</div>
+                                    <small class="text-muted">Citizen Rating</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Banner (Black) -->
+    <section class="cta-section bg-black text-white text-center py-5">
+        <div class="container py-4">
+            <h2 class="display-6 fw-bold mb-3">
+                Join JanSamadhan today for a cleaner,<br class="d-none d-md-block" /> smarter city.
+            </h2>
+            <p class="text-secondary mx-auto mb-4" style="max-width: 600px;">
+                Whether you're a citizen wanting to make a difference or an official seeking better management tools, our platform is built for you.
+            </p>
+            <a href="/Account/Register" class="btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold shadow-lg">
+                Get Started Now
             </a>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- Section 1: For Every Stakeholder -->
-<section id="stakeholders" class="py-5 bg-white border-bottom">
-    <div class="container py-lg-4">
-        <div class="section-header">
-            <h2>For Every Stakeholder</h2>
-            <p>Designed for seamless collaboration across the civic ecosystem.</p>
-        </div>
-
-        <div class="row g-4 justify-content-center">
-            <!-- Card 1: Citizens -->
-            <div class="col-md-6 col-lg-5">
-                <div class="stakeholder-card">
-                    <div class="stakeholder-header">
-                        <div class="stakeholder-icon icon-blue">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-                        <h4 class="mb-0">Citizens</h4>
-                    </div>
-                    <ul class="stakeholder-list">
-                        <li>Easy 1-click issue reporting with photo upload.</li>
-                        <li>Real-time status tracking and notifications.</li>
-                        <li>Interactive map view of local civic issues.</li>
-                    </ul>
-                </div>
+    <!-- Footer -->
+    <footer class="bg-dark text-secondary py-4 border-top border-secondary border-opacity-25" style="background-color: #060913 !important;">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold text-white fs-5"><i class="fas fa-landmark text-warning me-1"></i>JanSamadhan</span>
+                <span class="small text-muted">© 2026 JanSamadhan Civic Redressal. All rights reserved. Government Initiative.</span>
             </div>
-
-            <!-- Card 2: Municipal Officials -->
-            <div class="col-md-6 col-lg-5">
-                <div class="stakeholder-card">
-                    <div class="stakeholder-header">
-                        <div class="stakeholder-icon icon-dark">
-                            <i class="fa-solid fa-building-columns"></i>
-                        </div>
-                        <h4 class="mb-0">Municipal Officials</h4>
-                    </div>
-                    <ul class="stakeholder-list">
-                        <li>Comprehensive data analytics and dashboard.</li>
-                        <li>Efficient field workforce dispatch and management.</li>
-                        <li>SLA tracking and automated escalation protocols.</li>
-                    </ul>
-                </div>
+            <div class="d-flex align-items-center gap-3 small">
+                <a href="#" class="text-secondary text-decoration-none">Privacy Policy</a>
+                <a href="#" class="text-secondary text-decoration-none">Terms of Service</a>
+                <a href="#" class="text-secondary text-decoration-none">Accessibility</a>
+                <a href="#" class="text-secondary text-decoration-none">Open Data Portal</a>
             </div>
         </div>
-    </div>
-</section>
+    </footer>
+</div>
 
-<!-- Section 2: How It Works -->
-<section id="how-it-works" class="py-5 bg-light border-bottom">
-    <div class="container py-lg-4">
-        <div class="section-header">
-            <h2>How it Works</h2>
-            <p>A transparent, 4-step process to civic resolution.</p>
-        </div>
+<style>
+.landing-page-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+    color: #1a1f2c;
+}
 
-        <div class="row g-4">
-            <!-- Step 1 -->
-            <div class="col-6 col-md-3">
-                <div class="step-card">
-                    <div class="step-number">1</div>
-                    <div class="step-icon-box text-primary">
-                        <i class="fa-solid fa-camera"></i>
-                    </div>
-                    <h5 class="step-title">Report</h5>
-                    <p class="step-desc">Drop a photo and tag the location</p>
-                </div>
-            </div>
+.nav-link-custom {
+    text-decoration: none;
+    color: #4a5568;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+}
 
-            <!-- Step 2 -->
-            <div class="col-6 col-md-3">
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <div class="step-icon-box text-warning">
-                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                    </div>
-                    <h5 class="step-title">Dispatch</h5>
-                    <p class="step-desc">Auto-routing to the correct department</p>
-                </div>
-            </div>
+.nav-link-custom:hover {
+    color: #000;
+}
 
-            <!-- Step 3 -->
-            <div class="col-6 col-md-3">
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <div class="step-icon-box text-info">
-                        <i class="fa-solid fa-screwdriver-wrench"></i>
-                    </div>
-                    <h5 class="step-title">Resolve</h5>
-                    <p class="step-desc">Technician provides dual-photo proof</p>
-                </div>
-            </div>
+.hero-section {
+    background: radial-gradient(circle at 50% 30%, rgba(240, 244, 255, 0.8) 0%, rgba(255, 255, 255, 1) 70%);
+}
 
-            <!-- Step 4 -->
-            <div class="col-6 col-md-3">
-                <div class="step-card">
-                    <div class="step-number">4</div>
-                    <div class="step-icon-box text-success">
-                        <i class="fa-solid fa-circle-check"></i>
-                    </div>
-                    <h5 class="step-title">Close</h5>
-                    <p class="step-desc">Citizen reviews and provides feedback</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+.hero-grid-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+    opacity: 0.5;
+    pointer-events: none;
+}
 
-<!-- Section 3: Platform Features (Bento Grid) -->
-<section id="features" class="py-5 bg-white border-bottom">
-    <div class="container py-lg-4">
-        <div class="section-header">
-            <h2>Platform Features</h2>
-            <p>Built on a foundation of data, transparency, and accountability.</p>
-        </div>
+.hero-badge {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
 
-        <div class="row g-4">
-            <!-- Bento 1: Geospatial Intelligence (Wide) -->
-            <div class="col-lg-8">
-                <div class="bento-card d-flex flex-column justify-content-between">
-                    <div>
-                        <div class="bento-icon text-primary">
-                            <i class="fa-solid fa-earth-americas"></i>
-                        </div>
-                        <h4 class="bento-title">Geospatial Intelligence</h4>
-                        <p class="bento-desc">
-                            Every grievance is mapped, allowing authorities to visualize hotspots, discover duplicate reports in a 200m radius, and allocate municipal resources efficiently.
-                        </p>
-                    </div>
-                    <div class="mt-4 p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="badge bg-danger">● Pending: Pothole</span>
-                            <span class="badge bg-warning text-dark">● In-Progress: Streetlight</span>
-                            <span class="badge bg-success">● Fixed: Water Disposal</span>
-                        </div>
-                        <a href="/Account/Login" class="text-decoration-none text-dark fw-bold small">
-                            Explore Map <i class="fa-solid fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
+.hero-title {
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+}
 
-            <!-- Bento 2: Gamified Workforce -->
-            <div class="col-lg-4">
-                <div class="bento-card">
-                    <div class="bento-icon text-warning">
-                        <i class="fa-solid fa-lightbulb"></i>
-                    </div>
-                    <h4 class="bento-title">Gamified Workforce</h4>
-                    <p class="bento-desc">
-                        Motivating field technicians with performance points, dynamic badges (Bronze to Diamond), and transparent public leaderboards.
-                    </p>
-                    <a href="/Account/Login" class="text-decoration-none text-primary fw-semibold small mt-3 d-inline-block">
-                        Learn more <i class="fa-solid fa-arrow-right ms-1"></i>
-                    </a>
-                </div>
-            </div>
+.hero-btn-main {
+    background-color: #000;
+    border-color: #000;
+}
 
-            <!-- Bento 3: Transparent Redressal -->
-            <div class="col-lg-4">
-                <div class="bento-card">
-                    <div class="bento-icon text-success">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <h4 class="bento-title">Transparent Redressal</h4>
-                    <p class="bento-desc">
-                        Dual-photo proof ensures that work is physically verified on-site before a ticket is closed by municipal staff.
-                    </p>
-                    <a href="/Account/Login" class="text-decoration-none text-dark fw-semibold small mt-3 d-inline-block">
-                        View Dashboard <i class="fa-solid fa-arrow-right ms-1"></i>
-                    </a>
-                </div>
-            </div>
+.hero-btn-main:hover {
+    background-color: #222;
+}
 
-            <!-- Bento 4: Actionable Insights -->
-            <div class="col-lg-8">
-                <div class="bento-card">
-                    <div class="bento-icon text-info">
-                        <i class="fa-solid fa-chart-column"></i>
-                    </div>
-                    <h4 class="bento-title">Actionable Insights</h4>
-                    <p class="bento-desc">
-                        Comprehensive reports on resolution times, department efficiency, citizen satisfaction ratings, and common municipal bottlenecks.
-                    </p>
-                    <div class="row g-2 mt-3 pt-2 border-top">
-                        <div class="col-4 text-center border-end">
-                            <h5 class="fw-bold mb-0">99.2%</h5>
-                            <small class="text-muted">Resolution Rate</small>
-                        </div>
-                        <div class="col-4 text-center border-end">
-                            <h5 class="fw-bold mb-0">&lt; 48 Hrs</h5>
-                            <small class="text-muted">Average SLA</small>
-                        </div>
-                        <div class="col-4 text-center">
-                            <h5 class="fw-bold mb-0">4.8 / 5</h5>
-                            <small class="text-muted">Citizen Rating</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+.icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-<!-- Section 4: CTA Banner (Mockup 2 Dark Banner) -->
-<section class="container" id="contact">
-    <div class="cta-banner">
-        <h2>Join JanSamadhan today for a cleaner,<br class="d-none d-md-inline"> smarter city.</h2>
-        <p>
-            Whether you're a citizen wanting to make a difference or an official seeking better management tools, our platform is built for you.
-        </p>
-        <a href="/Account/Register" class="btn-cta-white">
-            Get Started Now
-        </a>
-    </div>
-</section>
+.stakeholder-card, .step-card, .feature-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
 
-<!-- Footer (Mockup 2 Footer) -->
-<footer class="landing-footer">
-    <div class="container">
-        <div class="row align-items-center g-3">
-            <div class="col-md-6">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <i class="fa-solid fa-city text-white"></i>
-                    <span class="fw-bold text-white fs-6">JanSamadhan</span>
-                </div>
-                <p class="small text-muted mb-0">
-                    &copy; 2026 JanSamadhan Civic Redressal. All rights reserved. Government of India Initiative.
-                </p>
-            </div>
-            <div class="col-md-6">
-                <div class="d-flex flex-wrap justify-content-md-end gap-3 small">
-                    <a href="#">Privacy Policy</a>
-                    <a href="#">Terms of Service</a>
-                    <a href="#">Accessibility</a>
-                    <a href="#">Open Data Portal</a>
-                    <a href="/Account/AdminLogin" class="text-warning fw-semibold">Admin Login</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</footer>
+.stakeholder-card:hover, .step-card:hover, .feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07) !important;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    background-color: #000;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+</style>

@@ -84,48 +84,6 @@ using (var scope = app.Services.CreateScope())
         }
     }
     catch { }
-
-    // Clean up unwanted users - keep only user1, user2, user3
-    try
-    {
-        // Remove all users except user1, user2, user3
-        var usersToRemove = db.Users.Where(u => !new[] { "user1", "user2", "user3" }.Contains(u.Name)).ToList();
-        
-        if (usersToRemove.Any())
-        {
-            // Remove related data first
-            foreach (var user in usersToRemove)
-            {
-                // Remove user's complaints
-                var userComplaints = db.Complaints.Where(c => c.UserId == user.UserId).ToList();
-                foreach (var complaint in userComplaints)
-                {
-                    // Remove related data for each complaint
-                    var comments = db.Comments.Where(c => c.ComplaintId == complaint.ComplaintId).ToList();
-                    var ratings = db.ComplaintRatings.Where(r => r.ComplaintId == complaint.ComplaintId).ToList();
-                    var assignments = db.ComplaintAssignments.Where(a => a.ComplaintId == complaint.ComplaintId).ToList();
-                    
-                    db.Comments.RemoveRange(comments);
-                    db.ComplaintRatings.RemoveRange(ratings);
-                    db.ComplaintAssignments.RemoveRange(assignments);
-                }
-                db.Complaints.RemoveRange(userComplaints);
-                
-                // Remove user's ratings
-                var userRatings = db.ComplaintRatings.Where(r => r.UserId == user.UserId).ToList();
-                db.ComplaintRatings.RemoveRange(userRatings);
-                
-                // Remove user's assignment history
-                var userAssignments = db.ComplaintAssignments.Where(a => a.AssignedByUserId == user.UserId).ToList();
-                db.ComplaintAssignments.RemoveRange(userAssignments);
-            }
-            
-            // Remove the users
-            db.Users.RemoveRange(usersToRemove);
-            db.SaveChanges();
-        }
-    }
-    catch { }
 }
 
 app.Run();

@@ -3,96 +3,38 @@
     var isAdmin = Context.User?.IsInRole("Admin") ?? false;
     var isDepartmentManager = Context.User?.IsInRole("DepartmentManager") ?? false;
     var isTechnician = Context.User?.IsInRole("Technician") ?? false;
-    var isFullWidth = (ViewData["FullWidth"] as bool?) ?? false;
-    var isLanding = (ViewData["IsLandingPage"] as bool?) ?? false;
 }
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " — JanSamadhan" : "JanSamadhan — Empowering Cities through Digital Clarity")</title>
-    
-    <!-- Google Fonts & FontAwesome Icons -->
+    <title>JanSamadhan</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    
-    <!-- Bootstrap 5 & Leaflet -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="~/css/site.css" />
-    
     <style>
-        .status-badge.pending { background-color: #dc3545; color: white; }
-        .status-badge.inprogress { background-color: #fd7e14; color: white; }
-        .status-badge.fixed { background-color: #28a745; color: white; }
+        body { font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif; }
+        .status-badge.pending { background-color: #dc3545; }
+        .status-badge.inprogress { background-color: #fd7e14; }
+        .status-badge.fixed { background-color: #28a745; }
     </style>
     @RenderSection("Styles", required: false)
+    <link rel="stylesheet" href="~/css/site.css" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<body class="@(isLanding ? "bg-white" : "")">
-
-    @if (isLanding)
+<body>
+    @if (ViewData["HideDefaultNav"] as bool? != true)
     {
-        <!-- Modern Landing Navbar (Mockup 2 Header) -->
-        <header class="landing-navbar">
-            <div class="container d-flex align-items-center justify-content-between">
-                <a class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-5 brand-font" href="/">
-                    <i class="fa-solid fa-city text-dark"></i>
-                    <span>JanSamadhan</span>
-                </a>
-                
-                <nav class="d-none d-md-flex align-items-center gap-2">
-                    <a class="landing-nav-link" href="#features">Features</a>
-                    <a class="landing-nav-link" href="#how-it-works">How It Works</a>
-                    <a class="landing-nav-link" href="#stakeholders">About Us</a>
-                    <a class="landing-nav-link" href="#contact">Contact</a>
-                </nav>
-                
-                <div class="d-flex align-items-center gap-3">
-                    @if (isAuthenticated)
-                    {
-                        @if (isAdmin)
-                        {
-                            <a href="/Admin" class="btn btn-sm btn-outline-dark fw-semibold">Admin Panel</a>
-                        }
-                        else if (isTechnician)
-                        {
-                            <a href="/Technician/Dashboard" class="btn btn-sm btn-outline-dark fw-semibold">Tech Dashboard</a>
-                        }
-                        else
-                        {
-                            <a href="/Complaint" class="btn btn-sm btn-outline-dark fw-semibold">My Complaints</a>
-                        }
-                        <a href="/Account/Logout" class="btn btn-sm btn-dark fw-semibold">Logout</a>
-                    }
-                    else
-                    {
-                        <a href="/Account/AdminLogin" class="btn btn-sm btn-outline-secondary fw-semibold">
-                            <i class="fa-solid fa-shield-halved me-1"></i> Admin Login
-                        </a>
-                        <a href="/Account/Login" class="btn btn-sm btn-dark fw-semibold px-3">
-                            Report Problem <i class="fa-solid fa-arrow-right ms-1"></i>
-                        </a>
-                    }
-                </div>
-            </div>
-        </header>
-    }
-    else
-    {
-        <!-- App Navigation Bar -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-2">
-            <div class="container-fluid px-lg-4">
-                <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="/">
-                    <i class="fa-solid fa-city text-primary-emphasis"></i>
-                    <span>JanSamadhan</span>
-                </a>
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" href="/"><i class="fas fa-landmark me-2 text-warning"></i>JanSamadhan</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarsExampleDefault">
@@ -101,65 +43,59 @@
                         {
                             @if (isAdmin)
                             {
-                                <li class="nav-item"><a class="nav-link" href="/Admin"><i class="fa-solid fa-gauge-high me-1"></i> Admin Dashboard</a></li>
-                                <li class="nav-item"><a class="nav-link text-warning fw-bold" href="/Admin/CreateTechnician"><i class="fa-solid fa-user-plus me-1"></i> + Create Technician</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Role"><i class="fa-solid fa-users-gear me-1"></i> Role Management</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Map/AdminMap"><i class="fa-solid fa-map-location-dot me-1"></i> Map View</a></li>
+                                <!-- Admin Navigation -->
+                                <li class="nav-item"><a class="nav-link" href="/Admin">Admin Dashboard</a></li>
+                                <li class="nav-item"><a class="nav-link text-warning fw-bold" href="/Admin/CreateTechnician">+ Create Technician</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Role">Role Management</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Map/AdminMap">Map View</a></li>
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                        <i class="fa-solid fa-trophy me-1"></i> Scoreboards
+                                        Scoreboards
                                     </a>
-                                    <ul class="dropdown-menu shadow">
-                                        <li><a class="dropdown-item" href="/Admin/Scoreboard"><i class="fa-solid fa-user me-2"></i> User Scoreboard</a></li>
-                                        <li><a class="dropdown-item" href="/Admin/TechnicianScoreboard"><i class="fa-solid fa-helmet-safety me-2"></i> Technician Scoreboard</a></li>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/Admin/Scoreboard">User Scoreboard</a></li>
+                                        <li><a class="dropdown-item" href="/Admin/TechnicianScoreboard">Technician Scoreboard</a></li>
                                     </ul>
                                 </li>
                             }
                             else if (isTechnician)
                             {
-                                <li class="nav-item"><a class="nav-link" href="/Technician/Dashboard"><i class="fa-solid fa-clipboard-list me-1"></i> Dashboard</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Technician/AvailableWork"><i class="fa-solid fa-briefcase me-1"></i> Available Work</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Technician/Scoreboard"><i class="fa-solid fa-trophy me-1"></i> Scoreboard</a></li>
+                                <!-- Technician Navigation -->
+                                <li class="nav-item"><a class="nav-link" href="/Technician/Dashboard">Dashboard</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Technician/Scoreboard">Scoreboard</a></li>
                             }
                             else
                             {
-                                <li class="nav-item"><a class="nav-link" href="/Complaint"><i class="fa-solid fa-list-check me-1"></i> My Complaints</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Complaint/Create"><i class="fa-solid fa-plus-circle me-1"></i> Report Issue</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Home/Nearby"><i class="fa-solid fa-map-pin me-1"></i> Nearby Issues</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Badge"><i class="fa-solid fa-award me-1"></i> Badges</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Home/Scoreboard"><i class="fa-solid fa-trophy me-1"></i> Scoreboard</a></li>
+                                <!-- User Navigation -->
+                                <li class="nav-item"><a class="nav-link" href="/Complaint">My Complaints</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Home/Nearby">Nearby Issues</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Badge">Badges</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Home/Scoreboard">Scoreboard</a></li>
                             }
                         }
                     </ul>
-                    <ul class="navbar-nav ms-auto align-items-center gap-2">
+                    <ul class="navbar-nav ms-auto">
                         @if (!isAuthenticated)
                         {
                             <li class="nav-item"><a class="nav-link" href="/Account/Login">Login</a></li>
                             <li class="nav-item"><a class="nav-link" href="/Account/Register">Register</a></li>
-                            <li class="nav-item"><a class="nav-link btn btn-sm btn-outline-warning text-warning px-3 ms-2" href="/Account/AdminLogin"><i class="fa-solid fa-lock me-1"></i> Admin Login</a></li>
+                            <li class="nav-item"><a class="nav-link text-warning" href="/Account/AdminLogin"><i class="fas fa-user-shield me-1"></i>Admin Login</a></li>
                         }
                         else
                         {
-                            <li class="nav-item"><a class="nav-link" href="/Account/Profile"><i class="fa-solid fa-user-circle me-1"></i> Profile</a></li>
-                            <li class="nav-item"><a class="nav-link text-danger" href="/Account/Logout"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Logout</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/Account/Profile">Profile</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/Account/Logout">Logout</a></li>
                         }
                     </ul>
                 </div>
             </div>
         </nav>
     }
-
-    @if (isFullWidth)
-    {
+    <main class="@(ViewData["FullWidth"] as bool? == true ? "p-0 m-0 w-100" : "container py-4")">
         @RenderBody()
-    }
-    else
-    {
-        <main class="container py-4">
-            @RenderBody()
-        </main>
-    }
-
+    </main>
     @RenderSection("Scripts", required: false)
 </body>
 </html>
+
+

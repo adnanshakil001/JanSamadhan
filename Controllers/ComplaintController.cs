@@ -21,8 +21,21 @@ namespace JanSamadhan.Controllers
 
         public async Task<IActionResult> Index()
         {
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(idClaim, out int userId);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null && !string.IsNullOrEmpty(userEmail))
+            {
+                user = await _db.Users.FirstOrDefaultAsync(u => u.Email == userEmail);
+            }
+
+            if (user != null)
+            {
+                userId = user.UserId;
+            }
             
             IQueryable<Complaint> query;
             
@@ -42,8 +55,16 @@ namespace JanSamadhan.Controllers
                 .Include(c => c.Department)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
-                
+
             ViewBag.UserRole = userRole;
+            ViewBag.UserName = user?.Name ?? (User.FindFirstValue(ClaimTypes.Name) ?? "Citizen");
+            ViewBag.UserPoints = user?.Points ?? 0;
+            ViewBag.BadgeLevel = user?.BadgeLevel ?? "Bronze";
+            ViewBag.PendingCount = complaints.Count(c => c.Status == ComplaintStatus.Pending);
+            ViewBag.InProgressCount = complaints.Count(c => c.Status == ComplaintStatus.InProgress);
+            ViewBag.FixedCount = complaints.Count(c => c.Status == ComplaintStatus.Fixed);
+            ViewBag.TotalCount = complaints.Count;
+
             return View(complaints);
         }
 
@@ -65,9 +86,17 @@ namespace JanSamadhan.Controllers
             string? photoPath = null;
             if (photo != null && photo.Length > 0)
             {
+                var ext = Path.GetExtension(photo.FileName).ToLowerInvariant();
+                var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+                if (!allowedExts.Contains(ext) || photo.Length > 15 * 1024 * 1024)
+                {
+                    ModelState.AddModelError(string.Empty, "Photo must be a valid image file (JPG, PNG, WebP) under 15MB.");
+                    return View();
+                }
+
                 string uploads = Path.Combine(_env.WebRootPath, "uploads");
                 Directory.CreateDirectory(uploads);
-                string fileName = $"{Guid.NewGuid()}{Path.GetExtension(photo.FileName)}";
+                string fileName = $"{Guid.NewGuid()}{ext}";
                 string filePath = Path.Combine(uploads, fileName);
                 using (var stream = System.IO.File.Create(filePath))
                 {
@@ -76,7 +105,37 @@ namespace JanSamadhan.Controllers
                 photoPath = $"/uploads/{fileName}";
             }
 
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int userId))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null && !string.IsNullOrEmpty(userEmail))
+            {
+                user = await _db.Users.FirstOrDefaultAsync(u => u.Email == userEmail);
+            }
+
+            if (user == null)
+            {
+                var userName = User.FindFirstValue(ClaimTypes.Name) ?? "Citizen";
+                user = new User
+                {
+                    Name = userName,
+                    Email = !string.IsNullOrEmpty(userEmail) ? userEmail : $"user_{Guid.NewGuid().ToString("N").Substring(0, 6)}@citizen.local",
+                    PasswordHash = "N/A",
+                    Points = 0,
+                    BadgeLevel = "Bronze",
+                    Role = "User"
+                };
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
+            }
+
+            userId = user.UserId;
+
             var complaint = new Complaint
             {
                 UserId = userId,
@@ -98,7 +157,7 @@ namespace JanSamadhan.Controllers
                 .Include(m => m.Department)
                 .FirstOrDefaultAsync(m => m.ProblemType == problemType && m.IsActive);
             
-            if (mapping != null)
+            if (mapping != null && await _db.Departments.AnyAsync(d => d.DepartmentId == mapping.DepartmentId))
             {
                 complaint.DepartmentId = mapping.DepartmentId;
                 complaint.UpdatedAt = DateTime.UtcNow;
@@ -108,7 +167,7 @@ namespace JanSamadhan.Controllers
                 {
                     ComplaintId = complaint.ComplaintId,
                     DepartmentId = mapping.DepartmentId,
-                    AssignedByUserId = userId, // System assignment
+                    AssignedByUserId = userId,
                     AssignedAt = DateTime.UtcNow,
                     IsActive = true,
                     Note = "Auto-assigned based on problem type"
@@ -123,7 +182,7 @@ namespace JanSamadhan.Controllers
                     AuthorId = userId,
                     AuthorName = "System",
                     AuthorRole = "System",
-                    Content = $"Complaint automatically assigned to {mapping.Department?.Name ?? "Unknown"} department",
+                    Content = $"Complaint automatically assigned to {mapping.Department?.Name ?? "Department"} department",
                     VisibleToUser = true,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -131,16 +190,10 @@ namespace JanSamadhan.Controllers
                 _db.Comments.Add(assignmentComment);
             }
 
-            await _db.SaveChangesAsync();
-
             // award points
-            var user = await _db.Users.FindAsync(userId);
-            if (user != null)
-            {
-                user.Points += 5; // basic gamification point
-                user.BadgeLevel = await ComputeBadgeLevel(user.Points);
-                await _db.SaveChangesAsync();
-            }
+            user.Points += 10;
+            user.BadgeLevel = await ComputeBadgeLevel(user.Points);
+            await _db.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
@@ -161,14 +214,14 @@ namespace JanSamadhan.Controllers
                 return NotFound();
             }
 
-            // Check if user has permission to view this complaint
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            // User information for view
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(idClaim, out int userId);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId || (!string.IsNullOrEmpty(userEmail) && u.Email == userEmail));
+            if (user != null) userId = user.UserId;
+
             var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "User";
-            
-            if (userRole == "User" && complaint.UserId != userId)
-            {
-                return Forbid();
-            }
 
             return View(complaint);
         }
@@ -181,7 +234,12 @@ namespace JanSamadhan.Controllers
                 return Json(new { success = false, message = "Rating must be between 1 and 5." });
             }
 
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(idClaim, out int userId);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId || (!string.IsNullOrEmpty(userEmail) && u.Email == userEmail));
+            if (user != null) userId = user.UserId;
+
             var complaint = await _db.Complaints.FindAsync(complaintId);
             
             if (complaint == null)
@@ -237,8 +295,13 @@ namespace JanSamadhan.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateStatus(int id, ComplaintStatus status)
         {
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(idClaim, out int userId);
             var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId || (!string.IsNullOrEmpty(userEmail) && u.Email == userEmail));
+            if (user != null) userId = user.UserId;
             
             var complaint = await _db.Complaints.FindAsync(id);
             if (complaint == null)

@@ -1,68 +1,122 @@
 @{
-    ViewData["Title"] = "Admin Login";
+    ViewData["Title"] = "Admin Portal - JanSamadhan";
+    ViewData["HideDefaultNav"] = true;
     ViewData["FullWidth"] = true;
 }
 
-<div class="auth-bg-grid">
-    <div class="auth-card border-warning">
-        <!-- Shield/Admin Icon -->
-        <div class="auth-icon-badge" style="background: #fffbeb; border-color: #fde68a;">
-            <i class="fa-solid fa-shield-halved text-warning"></i>
-        </div>
+<div class="auth-page-root d-flex align-items-center justify-content-center min-vh-100 py-5">
+    <div class="auth-grid-bg"></div>
 
-        <!-- Title & Subtitle -->
-        <div class="text-center mb-4">
-            <div class="d-inline-flex align-items-center gap-1 mb-1">
-                <h3 class="fw-bold mb-0 brand-font">JanSamadhan</h3>
-                <span class="badge bg-warning text-dark small">Admin</span>
+    <div class="container position-relative">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+                <div class="card auth-card border rounded-4 shadow-lg overflow-hidden bg-white">
+                    <!-- Card Header -->
+                    <div class="card-header bg-white text-center pt-4 pb-2 border-0">
+                        <div class="mb-3 d-inline-flex align-items-center justify-content-center auth-icon-box mx-auto">
+                            <i class="fas fa-shield-halved fs-2 text-dark"></i>
+                        </div>
+                        <h2 class="fw-bold text-dark mb-1 auth-brand-title">JanSamadhan</h2>
+                        <span class="badge bg-dark bg-opacity-10 text-dark rounded-pill px-3 py-1 small fw-semibold">
+                            <i class="fas fa-lock me-1"></i> Municipal Admin Portal
+                        </span>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body p-4 pt-3">
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">
+                                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <div><i class="fas fa-exclamation-circle me-1"></i> @err.ErrorMessage</div>
+                                }
+                            </div>
+                        }
+
+                        <form method="post" action="/Account/AdminLogin">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark small mb-1">Admin Email Address</label>
+                                <input class="form-control auth-input py-2 px-3" type="email" name="email" placeholder="admin@local" required autofocus />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark small mb-1">Administrative Password</label>
+                                <input class="form-control auth-input py-2 px-3" type="password" name="password" placeholder="••••••••" required />
+                            </div>
+
+                            <button class="btn btn-dark w-100 py-2 fw-semibold rounded-3 d-flex align-items-center justify-content-center gap-2 auth-btn-submit mt-3" type="submit">
+                                <i class="fas fa-arrow-right-to-bracket fs-6"></i> Authenticate as Admin
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-center gap-3 small">
+                                <a href="/Account/Login" class="text-secondary text-decoration-none">Citizen Login</a>
+                                <span class="text-muted">•</span>
+                                <a href="/Account/TechnicianLogin" class="text-secondary text-decoration-none">Technician Portal</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back to Home Link -->
+                <div class="text-center mt-3">
+                    <a href="/" class="text-secondary small text-decoration-none"><i class="fas fa-arrow-left me-1"></i> Back to Homepage</a>
+                </div>
             </div>
-            <p class="text-muted small mb-0">Municipal Administration Portal</p>
-        </div>
-
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="alert alert-danger py-2 small mb-3">
-                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    <div>@err.ErrorMessage</div>
-                }
-            </div>
-        }
-
-        <!-- Admin Login Form -->
-        <form method="post" action="/Account/AdminLogin">
-            <div class="mb-3">
-                <label class="form-label fw-semibold small text-secondary">Administrator Email</label>
-                <input class="form-control form-control-modern" type="email" name="email" placeholder="admin@local" required autofocus />
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label fw-semibold small text-secondary">Password</label>
-                <input class="form-control form-control-modern" type="password" name="password" placeholder="••••••••" required />
-            </div>
-
-            <!-- Primary Black Submit Button -->
-            <button class="auth-btn-primary mb-3" type="submit">
-                <i class="fa-solid fa-lock-open"></i>
-                <span>Access Admin Portal</span>
-            </button>
-        </form>
-
-        <div class="position-relative my-4">
-            <hr class="text-muted opacity-25">
-            <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">switch role</span>
-        </div>
-
-        <!-- Switch to Citizen/Technician login -->
-        <div class="d-grid gap-2">
-            <a href="/Account/Login" class="auth-btn-outline">
-                <i class="fa-solid fa-user text-primary"></i>
-                <span>Citizen Login</span>
-            </a>
-            <a href="/Account/TechnicianLogin" class="auth-btn-outline">
-                <i class="fa-solid fa-helmet-safety text-info"></i>
-                <span>Technician Portal</span>
-            </a>
         </div>
     </div>
 </div>
+
+<style>
+.auth-page-root {
+    background-color: #f8fafc;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+
+.auth-grid-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+}
+
+.auth-card {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.auth-input {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.auth-input:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+}
+
+.auth-btn-submit {
+    background-color: #000000;
+    border-color: #000000;
+    font-size: 1rem;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.auth-btn-submit:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+    transform: translateY(-1px);
+}
+</style>

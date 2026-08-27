@@ -1,75 +1,194 @@
 @model IEnumerable<dynamic>
 @{
-    ViewData["Title"] = "Technician Scoreboard";
+    ViewData["Title"] = "Technician Scoreboard - Admin";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Technician Scoreboard</h2>
-    <div>
-        <a href="/Admin/Scoreboard" class="btn btn-outline-primary">User Scoreboard</a>
-        <a href="/Admin/TechnicianScoreboard" class="btn btn-primary">Technician Scoreboard</a>
-    </div>
-</div>
+<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th>Completed Tasks</th>
-                        <th>Pending Tasks</th>
-                        <th>Performance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{
-                        int rank = 1;
-                    }
-                    @foreach (var tech in Model)
-                    {
-                        var performance = tech.CompletedTasks + tech.PendingTasks > 0 
-                            ? Math.Round((double)tech.CompletedTasks / (tech.CompletedTasks + tech.PendingTasks) * 100, 1)
-                            : 0;
-                        
-                        <tr>
-                            <td>@rank</td>
-                            <td>@tech.Name</td>
-                            <td>@tech.Email</td>
-                            <td>
-                                <span class="badge bg-info">@tech.DepartmentName</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-success">@tech.CompletedTasks</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-warning">@tech.PendingTasks</span>
-                            </td>
-                            <td>
-                                <div class="progress" style="width: 100px;">
-                                    <div class="progress-bar" role="progressbar" style="width: @performance%" 
-                                         aria-valuenow="@performance" aria-valuemin="0" aria-valuemax="100">
-                                        @performance%
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        rank++;
-                    }
-                </tbody>
-            </table>
+            <nav class="nav flex-column gap-1">
+                <a href="/Admin" class="sidebar-link">
+                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
+                </a>
+                <a href="/Map/AdminMap" class="sidebar-link">
+                    <i class="fas fa-map-marked-alt me-3"></i> Map View
+                </a>
+                <a href="/Role" class="sidebar-link">
+                    <i class="fas fa-users-cog me-3"></i> Role Management
+                </a>
+                <a href="/Admin/TechnicianScoreboard" class="sidebar-link active">
+                    <i class="fas fa-chart-line me-3"></i> Technician Board
+                </a>
+                <a href="/Admin/Scoreboard" class="sidebar-link">
+                    <i class="fas fa-medal me-3"></i> User Scoreboard
+                </a>
+            </nav>
         </div>
+
+        <div class="pt-3 border-top">
+            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                <i class="fas fa-user-plus"></i> + Add Technician
+            </a>
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-4">
+                <a href="/Admin" class="top-tab-link">Admin Dashboard</a>
+                <a href="/Admin/Scoreboard" class="top-tab-link">User Scoreboard</a>
+                <a href="/Admin/TechnicianScoreboard" class="top-tab-link active">Technician Scoreboard</a>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
+            </div>
+        </header>
+
+        <main class="p-4 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bolder text-dark mb-0">Field Technician Performance Board</h2>
+                    <p class="text-muted mb-0 small">Completion SLA, resolved tasks, and departmental operational rankings</p>
+                </div>
+                <div>
+                    <a href="/Admin/Scoreboard" class="btn btn-outline-primary rounded-pill px-3">Switch to Citizen Board →</a>
+                </div>
+            </div>
+
+            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light small text-muted">
+                            <tr>
+                                <th class="ps-4" style="width: 80px;">Rank</th>
+                                <th>Technician Name</th>
+                                <th>Email</th>
+                                <th>Department</th>
+                                <th>Completed Tasks</th>
+                                <th>Pending Tasks</th>
+                                <th class="pe-4">Resolution Efficiency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int rank = 1; }
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <i class="fas fa-tools fa-3x mb-2 opacity-50"></i>
+                                        <p class="mb-0">No technicians registered yet.</p>
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var tech in Model)
+                            {
+                                var total = tech.CompletedTasks + tech.PendingTasks;
+                                var performance = total > 0 
+                                    ? Math.Round((double)tech.CompletedTasks / total * 100, 1)
+                                    : 0;
+                                var badgeColor = rank == 1 ? "bg-warning text-dark" : (rank == 2 ? "bg-secondary text-white" : (rank == 3 ? "bg-dark text-white" : "bg-light text-dark border"));
+                                var perfColor = performance >= 75 ? "bg-success" : (performance >= 50 ? "bg-warning" : "bg-danger");
+
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="badge @badgeColor rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700;">
+                                            #@rank
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-dark">@tech.Name</td>
+                                    <td class="text-muted small">@tech.Email</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border rounded-pill px-3 py-1">
+                                            @tech.DepartmentName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold">
+                                            @tech.CompletedTasks Fixed
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill px-3 py-1 fw-bold">
+                                            @tech.PendingTasks Active
+                                        </span>
+                                    </td>
+                                    <td class="pe-4">
+                                        <div class="d-flex align-items-center gap-2" style="min-width: 140px;">
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar @perfColor rounded" style="width: @performance%"></div>
+                                            </div>
+                                            <span class="small fw-bold text-dark">@performance%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                rank++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
     </div>
 </div>
 
-@if (!Model.Any())
-{
-    <div class="alert alert-info">
-        <h4>No Technicians Found</h4>
-        <p>There are no technicians in the system yet.</p>
-    </div>
+<style>
+.admin-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
 }
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+.top-tab-link {
+    text-decoration: none;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.top-tab-link:hover {
+    color: #0f172a;
+}
+.top-tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+</style>

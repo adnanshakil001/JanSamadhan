@@ -1,58 +1,164 @@
 @{
-    ViewData["Title"] = "Create Technician";
+    ViewData["Title"] = "Create Technician - Admin";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
 }
 
-<h2>Create New Technician</h2>
+<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+            <nav class="nav flex-column gap-1">
+                <a href="/Admin" class="sidebar-link">
+                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
+                </a>
+                <a href="/Map/AdminMap" class="sidebar-link">
+                    <i class="fas fa-map-marked-alt me-3"></i> Map View
+                </a>
+                <a href="/Role" class="sidebar-link active">
+                    <i class="fas fa-users-cog me-3"></i> Role Management
+                </a>
+                <a href="/Admin/TechnicianScoreboard" class="sidebar-link">
+                    <i class="fas fa-chart-line me-3"></i> Technician Board
+                </a>
+                <a href="/Admin/Scoreboard" class="sidebar-link">
+                    <i class="fas fa-medal me-3"></i> User Scoreboard
+                </a>
+            </nav>
+        </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+        <div class="pt-3 border-top">
+            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                <i class="fas fa-user-plus"></i> + Add Technician
+            </a>
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </aside>
 
-<div class="card">
-    <div class="card-body">
-        <form method="post" asp-action="CreateTechnician">
-            <div class="mb-3">
-                <label class="form-label">Name</label>
-                <input class="form-control" type="text" name="name" required />
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Role" class="btn btn-outline-secondary btn-sm rounded-pill px-3"><i class="fas fa-arrow-left me-1"></i> Back to Roles</a>
+                <span class="text-muted">/</span>
+                <span class="fw-semibold text-dark">Create Technician</span>
             </div>
             
-            <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input class="form-control" type="email" name="email" required />
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
             </div>
-            
-            <div class="mb-3">
-                <label class="form-label">Password</label>
-                <input class="form-control" type="password" name="password" required />
+        </header>
+
+        <main class="p-4 flex-grow-1">
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
+                        <div class="card-header bg-white border-0 pt-4 px-4">
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <div class="p-2 bg-success bg-opacity-10 text-success rounded-circle">
+                                    <i class="fas fa-user-plus fs-4"></i>
+                                </div>
+                                <div>
+                                    <h4 class="fw-bold mb-0 text-dark">Create New Technician</h4>
+                                    <p class="text-muted small mb-0">Register and assign a new field workforce technician to a department.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-4 pt-2">
+                            @if (TempData["ErrorMessage"] != null)
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            }
+
+                            @if (TempData["SuccessMessage"] != null)
+                            {
+                                <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+                                    <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            }
+
+                            <form method="post" asp-action="CreateTechnician">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark small">Full Name</label>
+                                    <input class="form-control rounded-3" type="text" name="name" placeholder="e.g. Ramesh Sharma" required />
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark small">Official Email Address</label>
+                                    <input class="form-control rounded-3" type="email" name="email" placeholder="technician@domain.gov" required />
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark small">Initial Password</label>
+                                    <input class="form-control rounded-3" type="password" name="password" placeholder="••••••••" required />
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-dark small">Assigned Municipal Department</label>
+                                    <select class="form-select rounded-3" name="departmentId" required>
+                                        <option value="">Select Department</option>
+                                        @foreach (var dept in ViewBag.Departments)
+                                        {
+                                            <option value="@dept.DepartmentId">@dept.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn btn-success fw-bold px-4 py-2 rounded-pill" type="submit">
+                                        <i class="fas fa-save me-1"></i> Register Technician
+                                    </button>
+                                    <a class="btn btn-outline-secondary px-4 py-2 rounded-pill" href="/Role">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="mb-3">
-                <label class="form-label">Department</label>
-                <select class="form-select" name="departmentId" required>
-                    <option value="">Select Department</option>
-                    @foreach (var dept in ViewBag.Departments)
-                    {
-                        <option value="@dept.DepartmentId">@dept.Name</option>
-                    }
-                </select>
-            </div>
-            
-            <div class="mb-3">
-                <button class="btn btn-primary" type="submit">Create Technician</button>
-                <a class="btn btn-secondary" href="/Role">Back to Role Management</a>
-            </div>
-        </form>
+        </main>
     </div>
 </div>
+
+<style>
+.admin-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+</style>

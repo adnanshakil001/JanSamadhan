@@ -1,83 +1,264 @@
 @model IEnumerable<JanSamadhan.Models.Complaint>
 @{
+    ViewData["Title"] = "Citizen Dashboard - JanSamadhan";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
     var userRole = ViewBag.UserRole as string ?? "User";
-    var isTechnician = userRole == "Technician";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>@(isTechnician ? "My Assigned Tasks" : "My Complaints")</h2>
-    @if (!isTechnician)
-    {
-        <a class="btn btn-success" href="/Complaint/Create">New Complaint</a>
-    }
-</div>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Created</th>
-            <th>Type</th>
-            <th>Address</th>
-            <th>Status</th>
-            @if (isTechnician)
-            {
-                <th>Reported By</th>
-                <th>Department</th>
-            }
-            <th>Photo</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var c in Model)
-    {
-        var statusClass = c.Status == JanSamadhan.Models.ComplaintStatus.Pending ? "pending" : c.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "inprogress" : "fixed";
-        <tr>
-            <td>@c.CreatedAt.ToLocalTime().ToString("g")</td>
-            <td>@c.ProblemType</td>
-            <td>@c.Address</td>
-            <td><span class="badge status-badge @statusClass">@c.Status</span></td>
-            @if (isTechnician)
-            {
-                <td>@c.User?.Name</td>
-                <td>@c.Department?.Name</td>
-            }
-            <td>
-                @if (!string.IsNullOrEmpty(c.PhotoPath))
-                {
-                    <a href="@c.PhotoPath" target="_blank">View</a>
-                }
-            </td>
-            <td>
-                <div class="d-flex gap-1">
-                    <a href="@Url.Action("Details", new { id = c.ComplaintId })" class="btn btn-sm btn-outline-primary">View Details</a>
-                    @if (isTechnician && c.Status == JanSamadhan.Models.ComplaintStatus.Pending)
-                    {
-                        <button class="btn btn-sm btn-warning" onclick="updateStatus(@c.ComplaintId, 1)">Start Work</button>
-                    }
-                    @if (isTechnician && c.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
-                    {
-                        <button class="btn btn-sm btn-success" onclick="updateStatus(@c.ComplaintId, 2)">Mark Fixed</button>
-                    }
+<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <!-- Brand Logo -->
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
+
+            <!-- Navigation Links -->
+            <nav class="nav flex-column gap-1">
+                <a href="/Complaint" class="sidebar-link active">
+                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
+                </a>
+                <a href="/Complaint/Create" class="sidebar-link">
+                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
+                </a>
+                <a href="/Home/Nearby" class="sidebar-link">
+                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
+                </a>
+                <a href="/Badge" class="sidebar-link">
+                    <i class="fas fa-medal me-3"></i> Badges & Rewards
+                </a>
+                <a href="/Home/Scoreboard" class="sidebar-link">
+                    <i class="fas fa-trophy me-3"></i> Leaderboard
+                </a>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer Action -->
+        <div class="pt-3 border-top">
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <!-- Top Header Navigation Bar -->
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-4">
+                <a href="/Complaint" class="top-tab-link active">My Complaints</a>
+                <a href="/Complaint/Create" class="top-tab-link text-success fw-bold">+ Report New Issue</a>
+                <a href="/Home/Nearby" class="top-tab-link">Nearby Map</a>
+                <a href="/Badge" class="top-tab-link">Badges (@ViewBag.BadgeLevel)</a>
+                <a href="/Home/Scoreboard" class="top-tab-link">Leaderboard</a>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2 px-3 py-1 bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-pill">
+                    <i class="fas fa-star text-warning"></i>
+                    <span class="small fw-bold text-dark">@ViewBag.UserPoints Points</span>
                 </div>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+                <div class="dropdown">
+                    <button class="btn btn-light rounded-pill px-3 py-1 d-flex align-items-center gap-2 border" type="button" data-bs-toggle="dropdown">
+                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                            @(ViewBag.UserName != null && ((string)ViewBag.UserName).Length > 0 ? ((string)ViewBag.UserName).Substring(0, 1).ToUpper() : "U")
+                        </div>
+                        <span class="small fw-semibold text-dark">@ViewBag.UserName</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li><a class="dropdown-item" href="/Account/Profile"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                        <li><a class="dropdown-item" href="/Badge"><i class="fas fa-medal me-2"></i>My Badges</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="/Account/Logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
 
-@if (isTechnician)
-{
-    <script>
-        function updateStatus(complaintId, status) {
-            $.post('/Complaint/UpdateStatus', { id: complaintId, status: status })
-                .done(function() {
-                    location.reload();
-                })
-                .fail(function() {
-                    alert('Error updating status');
-                });
-        }
-    </script>
+        <!-- Page Body Content -->
+        <main class="p-4 flex-grow-1">
+            <!-- Header Title -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bolder text-dark mb-0">Citizen Grievance Portal</h2>
+                    <p class="text-muted mb-0 small">Track your reported civic anomalies, field technician progress, and resolutions.</p>
+                </div>
+                <div>
+                    <a href="/Complaint/Create" class="btn btn-dark fw-semibold rounded-pill px-4 shadow-sm">
+                        <i class="fas fa-plus me-1"></i> Report New Grievance
+                    </a>
+                </div>
+            </div>
+
+            <!-- Top Status Metric Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #dc3545;">
+                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Pending Triage</span>
+                                <h3 class="fw-bold mb-0">Pending: @ViewBag.PendingCount</h3>
+                            </div>
+                            <i class="fas fa-clock fa-2x text-white text-opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 text-dark rounded-4 shadow-sm" style="background-color: #ffc107;">
+                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="fs-6 text-dark text-opacity-75 fw-semibold d-block">Work In Progress</span>
+                                <h3 class="fw-bold mb-0">In Progress: @ViewBag.InProgressCount</h3>
+                            </div>
+                            <i class="fas fa-tools fa-2x text-dark text-opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #198754;">
+                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Resolved & Closed</span>
+                                <h3 class="fw-bold mb-0">Fixed: @ViewBag.FixedCount</h3>
+                            </div>
+                            <i class="fas fa-check-circle fa-2x text-white text-opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complaints Table Card -->
+            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
+                <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">My Reported Grievances</h5>
+                    <span class="text-muted small">Total: @ViewBag.TotalCount records</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light small text-muted">
+                            <tr>
+                                <th class="ps-4">Created Date</th>
+                                <th>Problem Type</th>
+                                <th>Location Address</th>
+                                <th>Status</th>
+                                <th>Department</th>
+                                <th>Photo Proof</th>
+                                <th class="pe-4 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
+                                        <h5>No grievances reported yet</h5>
+                                        <p class="small text-muted mb-3">Notice a pothole, broken streetlight, or garbage issue in your area? Report it now!</p>
+                                        <a href="/Complaint/Create" class="btn btn-primary rounded-pill px-4">Report Your First Issue</a>
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var c in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 small text-muted">@c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border px-2 py-1">@c.ProblemType</span>
+                                    </td>
+                                    <td class="small text-truncate" style="max-width: 250px;" title="@c.Address">
+                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>@(c.Address ?? "Location pinned on map")
+                                    </td>
+                                    <td>
+                                        <span class="badge status-badge @(c.Status.ToString().ToLower()) rounded-pill px-3 py-1">
+                                            @c.Status
+                                        </span>
+                                    </td>
+                                    <td class="small">@(c.Department?.Name ?? "Pending Assignment")</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(c.PhotoPath))
+                                        {
+                                            <a href="@c.PhotoPath" target="_blank" class="btn btn-sm btn-outline-secondary p-1 rounded">
+                                                <i class="fas fa-image"></i> View
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <a href="@Url.Action("Details", new { id = c.ComplaintId })" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                                            View Details & Proofs
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+.citizen-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
 }
 
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
 
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.top-tab-link {
+    text-decoration: none;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.top-tab-link:hover {
+    color: #0f172a;
+}
+
+.top-tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+
+.status-badge.pending { background-color: #dc3545 !important; color: #fff; }
+.status-badge.inprogress { background-color: #ffc107 !important; color: #000; }
+.status-badge.fixed { background-color: #198754 !important; color: #fff; }
+</style>

@@ -1,180 +1,262 @@
 @model IEnumerable<JanSamadhan.Models.User>
 @{
-    ViewData["Title"] = "User Role Management";
+    ViewData["Title"] = "Role Management - Admin";
+    ViewData["HideDefaultNav"] = true;
+    ViewData["FullWidth"] = true;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>User Role Management</h2>
-    <div class="d-flex gap-2">
-        <a href="/Admin/CreateTechnician" class="btn btn-success fw-bold">+ Add Technician</a>
-        <a href="/Admin" class="btn btn-outline-primary">Back to Admin</a>
-    </div>
-</div>
+<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
+    <!-- Left Sidebar -->
+    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+        <div>
+            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
+                <i class="fas fa-landmark text-primary"></i>
+                <span>JanSamadhan</span>
+            </a>
 
-<!-- Role Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-bg-primary">
-            <div class="card-body text-center">
-                <h5 class="card-title">@ViewBag.TotalUsers</h5>
-                <p class="card-text small">Total Users</p>
-            </div>
+            <nav class="nav flex-column gap-1">
+                <a href="/Admin" class="sidebar-link">
+                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
+                </a>
+                <a href="/Map/AdminMap" class="sidebar-link">
+                    <i class="fas fa-map-marked-alt me-3"></i> Map View
+                </a>
+                <a href="/Role" class="sidebar-link active">
+                    <i class="fas fa-users-cog me-3"></i> Role Management
+                </a>
+                <a href="/Admin/TechnicianScoreboard" class="sidebar-link">
+                    <i class="fas fa-chart-line me-3"></i> Technician Board
+                </a>
+                <a href="/Admin/Scoreboard" class="sidebar-link">
+                    <i class="fas fa-medal me-3"></i> User Scoreboard
+                </a>
+            </nav>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-bg-info">
-            <div class="card-body text-center">
-                <h5 class="card-title">@ViewBag.TechnicianCount</h5>
-                <p class="card-text small">Technicians</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-bg-secondary">
-            <div class="card-body text-center">
-                <h5 class="card-title">@ViewBag.RegularUserCount</h5>
-                <p class="card-text small">Regular Users</p>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Filter Panel -->
-<div class="card mb-4">
-    <div class="card-header">
-        <h6>Filters & Search</h6>
-    </div>
-    <div class="card-body">
-        <form method="get" action="/Role" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Role</label>
-                <select class="form-select" name="role">
-                    <option value="">All Roles</option>
-                    @foreach (var role in ViewBag.Roles)
-                    {
-                        <option value="@role" selected="@(ViewBag.Role == role)">@role</option>
-                    }
-                </select>
+        <div class="pt-3 border-top">
+            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                <i class="fas fa-user-plus"></i> + Add Technician
+            </a>
+            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Department</label>
-                <select class="form-select" name="departmentId">
-                    <option value="">All Departments</option>
-                    @foreach (var dept in ViewBag.Departments)
-                    {
-                        <option value="@dept.DepartmentId" selected="@(ViewBag.DepartmentId == dept.DepartmentId)">@dept.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Search</label>
-                <input type="text" class="form-control" name="q" value="@ViewBag.Q" placeholder="Search users...">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Sort By</label>
-                <select class="form-select" name="sortBy">
-                    <option value="Name" selected="@(ViewBag.SortBy == "Name")">Name</option>
-                    <option value="Email" selected="@(ViewBag.SortBy == "Email")">Email</option>
-                    <option value="Role" selected="@(ViewBag.SortBy == "Role")">Role</option>
-                    <option value="Points" selected="@(ViewBag.SortBy == "Points")">Points</option>
-                    <option value="Department" selected="@(ViewBag.SortBy == "Department")">Department</option>
-                </select>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">Apply Filters</button>
-                <a href="/Role" class="btn btn-outline-secondary">Reset</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped" id="usersTable">
-                <thead>
-                    <tr>
-                        <th>
-                            <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
-                        </th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Current Role</th>
-                        <th>Department</th>
-                        <th>Points</th>
-                        <th>Badge Level</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in Model)
-                    {
-                        <tr data-user-id="@user.UserId">
-                            <td>
-                                <input type="checkbox" class="user-checkbox" value="@user.UserId" onchange="updateSelectAllState()">
-                            </td>
-                            <td>@user.Name</td>
-                            <td>@user.Email</td>
-                            <td>
-                                <span class="badge role-badge @(user.Role.ToLower())">@user.Role</span>
-                            </td>
-                            <td>@user.Department?.Name</td>
-                            <td>@user.Points</td>
-                            <td>@user.BadgeLevel</td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editRole(@user.UserId, '@user.Role', @(user.DepartmentId?.ToString() ?? "null"))">
-                                        Edit Role
-                                    </button>
-                                    @if (user.Role != "Technician")
-                                    {
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(@user.UserId, '@user.Name')">
-                                            Delete
-                                        </button>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
         </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="flex-grow-1 d-flex flex-column overflow-auto">
+        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
+            <div class="d-flex align-items-center gap-4">
+                <a href="/Admin" class="top-tab-link">Admin Dashboard</a>
+                <a href="/Admin/CreateTechnician" class="top-tab-link text-success fw-bold">+ Create Technician</a>
+                <a href="/Role" class="top-tab-link active">Role Management</a>
+                <a href="/Map/AdminMap" class="top-tab-link">Map View</a>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
+                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
+            </div>
+        </header>
+
+        <main class="p-4 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bolder text-dark mb-0">User Role Management</h2>
+                    <p class="text-muted mb-0 small">Assign roles, municipal department mappings, and workforce permissions</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/Admin/CreateTechnician" class="btn btn-success fw-bold rounded-pill px-3">+ Add Technician</a>
+                    <button class="btn btn-primary fw-semibold rounded-pill px-3" onclick="showBulkUpdateModal()">Bulk Update</button>
+                </div>
+            </div>
+
+            <!-- Role Statistics Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-0 text-white rounded-4 shadow-sm bg-primary">
+                        <div class="card-body py-3 px-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Registered Citizens</span>
+                                <h3 class="fw-bold mb-0">@ViewBag.TotalUsers</h3>
+                            </div>
+                            <i class="fas fa-users fa-2x text-white text-opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #0ea5e9;">
+                        <div class="card-body py-3 px-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Active Field Technicians</span>
+                                <h3 class="fw-bold mb-0">@ViewBag.TechnicianCount</h3>
+                            </div>
+                            <i class="fas fa-tools fa-2x text-white text-opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 text-white rounded-4 shadow-sm bg-secondary">
+                        <div class="card-body py-3 px-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Regular Users</span>
+                                <h3 class="fw-bold mb-0">@ViewBag.RegularUserCount</h3>
+                            </div>
+                            <i class="fas fa-user-check fa-2x text-white text-opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="card border rounded-4 shadow-sm mb-4 bg-white">
+                <div class="card-header bg-white border-0 pt-3 px-4">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-filter me-2 text-primary"></i>Filters & Search</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1">
+                    <form method="get" action="/Role" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">Role</label>
+                            <select class="form-select rounded-3" name="role">
+                                <option value="">All Roles</option>
+                                @foreach (var role in ViewBag.Roles)
+                                {
+                                    <option value="@role" selected="@(ViewBag.Role == role)">@role</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">Department</label>
+                            <select class="form-select rounded-3" name="departmentId">
+                                <option value="">All Departments</option>
+                                @foreach (var dept in ViewBag.Departments)
+                                {
+                                    <option value="@dept.DepartmentId" selected="@(ViewBag.DepartmentId == dept.DepartmentId)">@dept.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">Search</label>
+                            <input type="text" class="form-control rounded-3" name="q" value="@ViewBag.Q" placeholder="Search by name or email...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">Sort By</label>
+                            <select class="form-select rounded-3" name="sortBy">
+                                <option value="Name" selected="@(ViewBag.SortBy == "Name")">Name</option>
+                                <option value="Email" selected="@(ViewBag.SortBy == "Email")">Email</option>
+                                <option value="Role" selected="@(ViewBag.SortBy == "Role")">Role</option>
+                                <option value="Points" selected="@(ViewBag.SortBy == "Points")">Points</option>
+                                <option value="Department" selected="@(ViewBag.SortBy == "Department")">Department</option>
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary rounded-3 px-4"><i class="fas fa-search me-1"></i> Apply Filters</button>
+                            <a href="/Role" class="btn btn-outline-secondary rounded-3 px-3">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Users Table Card -->
+            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="usersTable">
+                        <thead class="bg-light small text-muted">
+                            <tr>
+                                <th class="ps-4" style="width: 40px;">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleAllCheckboxes()">
+                                </th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Current Role</th>
+                                <th>Department</th>
+                                <th>Points</th>
+                                <th>Badge Level</th>
+                                <th class="pe-4 text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model)
+                            {
+                                <tr data-user-id="@user.UserId">
+                                    <td class="ps-4">
+                                        <input type="checkbox" class="form-check-input user-checkbox" value="@user.UserId" onchange="updateSelectAllState()">
+                                    </td>
+                                    <td class="fw-semibold text-dark">@user.Name</td>
+                                    <td class="text-muted small">@user.Email</td>
+                                    <td>
+                                        <span class="badge @(user.Role == "Technician" ? "bg-info text-dark" : (user.Role == "Admin" ? "bg-danger" : "bg-secondary")) rounded-pill px-3 py-1">
+                                            @user.Role
+                                        </span>
+                                    </td>
+                                    <td class="small">@(user.Department?.Name ?? "—")</td>
+                                    <td class="fw-bold">@user.Points</td>
+                                    <td>
+                                        <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill px-2 py-1 small">
+                                            @(user.BadgeLevel ?? "Bronze")
+                                        </span>
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="editRole(@user.UserId, '@user.Role', @(user.DepartmentId?.ToString() ?? "null"))">
+                                                Edit Role
+                                            </button>
+                                            @if (user.Role != "Technician" && user.Role != "Admin")
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2 ms-1" onclick="deleteUser(@user.UserId, '@user.Name')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
     </div>
 </div>
 
 <!-- Edit Role Modal -->
 <div class="modal fade" id="editRoleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit User Role</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Edit User Role & Permissions</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <form id="editRoleForm">
                     <input type="hidden" id="editUserId" />
                     <div class="mb-3">
-                        <label class="form-label">User</label>
-                        <input type="text" class="form-control" id="editUserName" readonly />
+                        <label class="form-label small fw-semibold">User Account</label>
+                        <input type="text" class="form-control rounded-3 bg-light" id="editUserName" readonly />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <select class="form-select" id="editRole" required>
-                            <option value="User">User</option>
-                            <option value="Technician">Technician</option>
+                        <label class="form-label small fw-semibold">Assigned System Role</label>
+                        <select class="form-select rounded-3" id="editRole" required>
+                            <option value="User">Citizen / User</option>
+                            <option value="Technician">Field Technician</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Department</label>
-                        <select class="form-select" id="editDepartment">
+                        <label class="form-label small fw-semibold">Department (For Technicians)</label>
+                        <select class="form-select rounded-3" id="editDepartment">
                             <option value="">No Department</option>
                         </select>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveRole()">Save Changes</button>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" onclick="saveRole()">Save Changes</button>
             </div>
         </div>
     </div>
@@ -182,38 +264,36 @@
 
 <!-- Bulk Update Modal -->
 <div class="modal fade" id="bulkUpdateModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Bulk Update Roles</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Bulk Update User Roles</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <form id="bulkUpdateForm">
                     <div class="mb-3">
-                        <label class="form-label">Selected Users: <span id="selectedCount">0</span></label>
-                        <div id="selectedUsersList" class="border p-2 rounded" style="max-height: 150px; overflow-y: auto;">
-                            <!-- Selected users will be listed here -->
-                        </div>
+                        <label class="form-label small fw-semibold">Selected Users (<span id="selectedCount">0</span>)</label>
+                        <div id="selectedUsersList" class="border p-2 rounded-3 bg-light" style="max-height: 120px; overflow-y: auto;"></div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">New Role</label>
-                        <select class="form-select" id="bulkRole" required>
-                            <option value="User">User</option>
-                            <option value="Technician">Technician</option>
+                        <label class="form-label small fw-semibold">New Role</label>
+                        <select class="form-select rounded-3" id="bulkRole" required>
+                            <option value="User">Citizen / User</option>
+                            <option value="Technician">Field Technician</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Department</label>
-                        <select class="form-select" id="bulkDepartment">
+                        <label class="form-label small fw-semibold">Department</label>
+                        <select class="form-select rounded-3" id="bulkDepartment">
                             <option value="">No Department</option>
                         </select>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveBulkUpdate()">Update Selected Users</button>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" onclick="saveBulkUpdate()">Apply to All Selected</button>
             </div>
         </div>
     </div>
@@ -221,23 +301,66 @@
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger">Confirm Delete</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
-                <p class="text-danger small">This action cannot be undone and will remove all associated data.</p>
+                <p class="text-danger small mb-0">This action cannot be undone.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete User</button>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4" onclick="confirmDelete()">Delete User</button>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.admin-dashboard-root {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.sidebar-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.sidebar-link.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+.top-tab-link {
+    text-decoration: none;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.top-tab-link:hover {
+    color: #0f172a;
+}
+.top-tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+</style>
 
 @section Scripts {
 <script>
@@ -330,12 +453,12 @@
         list.empty();
         
         if (selectedUsers.length === 0) {
-            list.html('<p class="text-muted mb-0">No users selected</p>');
+            list.html('<p class="text-muted small mb-0">No users selected</p>');
         } else {
             selectedUsers.forEach(user => {
-                list.append(`<div class="d-flex justify-content-between align-items-center mb-1">
+                list.append(`<div class="d-flex justify-content-between align-items-center mb-1 small">
                     <span>${user.name} (${user.email})</span>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeUser(${user.id})">×</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeUser(${user.id})">×</button>
                 </div>`);
             });
         }
@@ -348,17 +471,14 @@
 
     function showBulkUpdateModal() {
         if (selectedUsers.length === 0) {
-            alert('Please select at least one user to update.');
+            alert('Please select at least one user from the list first.');
             return;
         }
         $('#bulkUpdateModal').modal('show');
     }
 
     function saveBulkUpdate() {
-        if (selectedUsers.length === 0) {
-            alert('Please select at least one user to update.');
-            return;
-        }
+        if (selectedUsers.length === 0) return;
 
         const role = $('#bulkRole').val();
         const departmentId = $('#bulkDepartment').val() || null;
@@ -399,18 +519,4 @@
         });
     }
 </script>
-
-<style>
-.role-badge {
-    font-size: 0.8em;
-}
-
-.role-badge.user {
-    background-color: #6c757d;
-}
-
-.role-badge.technician {
-    background-color: #17a2b8;
-}
-</style>
 }
