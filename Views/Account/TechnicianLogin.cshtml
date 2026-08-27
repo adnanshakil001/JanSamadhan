@@ -1,26 +1,66 @@
 @{
     ViewData["Title"] = "Technician Login";
+    ViewData["FullWidth"] = true;
 }
 
-<h2>Technician Login</h2>
+<div class="auth-bg-grid">
+    <div class="auth-card border-info">
+        <!-- Helmet/Tech Icon -->
+        <div class="auth-icon-badge" style="background: #f0f9ff; border-color: #bae6fd;">
+            <i class="fa-solid fa-helmet-safety text-info"></i>
+        </div>
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+        <!-- Title & Subtitle -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center gap-1 mb-1">
+                <h3 class="fw-bold mb-0 brand-font">JanSamadhan</h3>
+                <span class="badge bg-info text-dark small">Field Tech</span>
+            </div>
+            <p class="text-muted small mb-0">Technician Field Operations Access</p>
+        </div>
 
-<form method="post" asp-action="TechnicianLogin" asp-controller="Account">
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input class="form-control" type="email" name="email" required />
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show py-2 small mb-3" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- Technician Login Form -->
+        <form method="post" asp-action="TechnicianLogin" asp-controller="Account">
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Technician Email</label>
+                <input class="form-control form-control-modern" type="email" name="email" placeholder="tech@gmail" required autofocus />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold small text-secondary">Password</label>
+                <input class="form-control form-control-modern" type="password" name="password" placeholder="••••••••" required />
+            </div>
+
+            <!-- Primary Black Submit Button -->
+            <button class="auth-btn-primary mb-3" type="submit">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <span>Access Field Dashboard</span>
+            </button>
+        </form>
+
+        <div class="position-relative my-4">
+            <hr class="text-muted opacity-25">
+            <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">switch role</span>
+        </div>
+
+        <!-- Switch to Citizen/Admin login -->
+        <div class="d-grid gap-2">
+            <a href="/Account/Login" class="auth-btn-outline">
+                <i class="fa-solid fa-user text-primary"></i>
+                <span>Citizen Login</span>
+            </a>
+            <a href="/Account/AdminLogin" class="auth-btn-outline">
+                <i class="fa-solid fa-shield-halved text-warning"></i>
+                <span>Administrator Login</span>
+            </a>
+        </div>
     </div>
-    <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" required />
-    </div>
-    <button class="btn btn-primary" type="submit">Login as Technician</button>
-    <a class="btn btn-link" href="/Account/Login">Back to User Login</a>
-</form>
+</div>

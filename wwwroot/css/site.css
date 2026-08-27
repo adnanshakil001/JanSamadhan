@@ -1,8 +1,484 @@
-body { padding-bottom: 40px; }
-.status-badge { color: #fff; }
-.status-badge.pending { background: #dc3545; }
-.status-badge.inprogress { background: #fd7e14; }
-.status-badge.fixed { background: #28a745; }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --color-bg: #ffffff;
+    --color-bg-subtle: #f8fafc;
+    --color-border: #e2e8f0;
+    --color-border-dark: #0f172a;
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #64748b;
+    --color-text-muted: #94a3b8;
+    --color-primary: #0f172a;
+    --color-accent: #2563eb;
+    --color-accent-light: #eff6ff;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-secondary);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .brand-font {
+    font-family: var(--font-primary);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-text-primary);
+}
+
+/* ==========================================================================
+   Grid Backgrounds
+   ========================================================================== */
+.bg-grid-pattern {
+    background-color: #ffffff;
+    background-image: 
+        linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
+
+.auth-bg-grid {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8fafc;
+    background-image: 
+        linear-gradient(to right, rgba(226, 232, 240, 0.8) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.8) 1px, transparent 1px);
+    background-size: 32px 32px;
+    padding: 2.5rem 1rem;
+}
+
+/* ==========================================================================
+   Modern Auth Card (Matching Mockup 1)
+   ========================================================================== */
+.auth-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    width: 100%;
+    max-width: 440px;
+    padding: 2.5rem 2rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-icon-badge {
+    width: 52px;
+    height: 52px;
+    background: #f8fafc;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #0f172a;
+    margin: 0 auto 1.25rem auto;
+}
+
+.auth-btn-primary {
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    width: 100%;
+    font-family: var(--font-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.auth-btn-primary:hover {
+    background-color: #27272a;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.auth-btn-outline {
+    background-color: transparent;
+    color: #0f172a;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.65rem 1rem;
+    width: 100%;
+    font-family: var(--font-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.auth-btn-outline:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: #000000;
+}
+
+.form-control-modern {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-control-modern:focus {
+    border-color: #000000;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+    outline: none;
+}
+
+/* ==========================================================================
+   Modern Landing Page Components (Matching Mockup 2)
+   ========================================================================== */
+.landing-pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 1.5rem;
+}
+
+.hero-title {
+    font-size: 3.25rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.035em;
+    color: #09090b;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.25rem;
+    }
+}
+
+.hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--color-text-secondary);
+    max-width: 680px;
+    margin: 0 auto 2rem auto;
+    line-height: 1.6;
+}
+
+.btn-landing-primary {
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-landing-primary:hover {
+    background-color: #27272a;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-landing-outline {
+    background-color: #ffffff;
+    color: #09090b;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-landing-outline:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: #000000;
+    transform: translateY(-2px);
+}
+
+/* Section Header Styles */
+.section-header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+}
+
+.section-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.5rem;
+}
+
+.section-header p {
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+}
+
+/* Stakeholder Cards */
+.stakeholder-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 2rem;
+    height: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.stakeholder-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
+}
+
+.stakeholder-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stakeholder-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.icon-blue { background: #eff6ff; color: #2563eb; }
+.icon-dark { background: #0f172a; color: #ffffff; }
+
+.stakeholder-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+.stakeholder-list li {
+    position: relative;
+    padding-left: 1.75rem;
+    margin-bottom: 0.85rem;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+.stakeholder-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #2563eb;
+    font-weight: 700;
+}
+
+/* How It Works Step Cards */
+.step-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    height: 100%;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.step-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -4px rgba(0, 0, 0, 0.06);
+}
+
+.step-number {
+    width: 36px;
+    height: 36px;
+    background: #000000;
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin: 0 auto 1.25rem auto;
+}
+
+.step-icon-box {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.step-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.step-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.88rem;
+    margin-bottom: 0;
+}
+
+/* Bento Grid Features */
+.bento-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 2rem;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.bento-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.05);
+}
+
+.bento-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+
+.bento-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+}
+
+.bento-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+/* CTA Banner */
+.cta-banner {
+    background: #000000;
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 4rem 2rem;
+    text-align: center;
+    margin: 4rem 0;
+}
+
+.cta-banner h2 {
+    color: #ffffff;
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.cta-banner p {
+    color: #a1a1aa;
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+    font-size: 1.05rem;
+}
+
+.btn-cta-white {
+    background-color: #ffffff;
+    color: #000000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    padding: 0.85rem 2rem;
+    font-family: var(--font-primary);
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+}
+
+.btn-cta-white:hover {
+    background-color: #f4f4f5;
+    color: #000000;
+    transform: scale(1.03);
+    box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
+}
+
+/* Modern Landing Navbar */
+.landing-navbar {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 0.85rem 0;
+}
+
+.landing-nav-link {
+    color: #475569;
+    font-weight: 500;
+    font-size: 0.92rem;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.landing-nav-link:hover {
+    color: #000000;
+}
+
+/* Landing Footer */
+.landing-footer {
+    background: #09090b;
+    color: #a1a1aa;
+    padding: 3rem 0 2rem 0;
+    border-top: 1px solid #27272a;
+}
+
+.landing-footer a {
+    color: #a1a1aa;
+    text-decoration: none;
+    font-size: 0.88rem;
+    transition: color 0.2s ease;
+}
+
+.landing-footer a:hover {
+    color: #ffffff;
+}
 
 /* Star Rating Styles */
 .rating .star {
@@ -12,22 +488,6 @@ body { padding-bottom: 40px; }
     transition: color 0.2s;
     user-select: none;
 }
-
-.rating .star:hover {
-    color: #ffc107;
-}
-
-.rating .star.filled {
-    color: #ffc107;
-}
-
-.rating-display .star {
-    font-size: 20px;
-    color: #ddd;
-}
-
-.rating-display .star.filled {
-    color: #ffc107;
-}
-
-
+.rating .star:hover, .rating .star.filled { color: #ffc107; }
+.rating-display .star { font-size: 20px; color: #ddd; }
+.rating-display .star.filled { color: #ffc107; }

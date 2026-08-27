@@ -1,21 +1,68 @@
 @{
     ViewData["Title"] = "Admin Login";
-}
-<h2>Admin Login</h2>
-<form method="post">
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input class="form-control" type="email" name="email" required />
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" required />
-    </div>
-    <button class="btn btn-primary" type="submit">Login</button>
-</form>
-@foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-{
-    <div class="text-danger">@err.ErrorMessage</div>
+    ViewData["FullWidth"] = true;
 }
 
+<div class="auth-bg-grid">
+    <div class="auth-card border-warning">
+        <!-- Shield/Admin Icon -->
+        <div class="auth-icon-badge" style="background: #fffbeb; border-color: #fde68a;">
+            <i class="fa-solid fa-shield-halved text-warning"></i>
+        </div>
 
+        <!-- Title & Subtitle -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center gap-1 mb-1">
+                <h3 class="fw-bold mb-0 brand-font">JanSamadhan</h3>
+                <span class="badge bg-warning text-dark small">Admin</span>
+            </div>
+            <p class="text-muted small mb-0">Municipal Administration Portal</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger py-2 small mb-3">
+                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@err.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <!-- Admin Login Form -->
+        <form method="post" action="/Account/AdminLogin">
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Administrator Email</label>
+                <input class="form-control form-control-modern" type="email" name="email" placeholder="admin@local" required autofocus />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold small text-secondary">Password</label>
+                <input class="form-control form-control-modern" type="password" name="password" placeholder="••••••••" required />
+            </div>
+
+            <!-- Primary Black Submit Button -->
+            <button class="auth-btn-primary mb-3" type="submit">
+                <i class="fa-solid fa-lock-open"></i>
+                <span>Access Admin Portal</span>
+            </button>
+        </form>
+
+        <div class="position-relative my-4">
+            <hr class="text-muted opacity-25">
+            <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">switch role</span>
+        </div>
+
+        <!-- Switch to Citizen/Technician login -->
+        <div class="d-grid gap-2">
+            <a href="/Account/Login" class="auth-btn-outline">
+                <i class="fa-solid fa-user text-primary"></i>
+                <span>Citizen Login</span>
+            </a>
+            <a href="/Account/TechnicianLogin" class="auth-btn-outline">
+                <i class="fa-solid fa-helmet-safety text-info"></i>
+                <span>Technician Portal</span>
+            </a>
+        </div>
+    </div>
+</div>
