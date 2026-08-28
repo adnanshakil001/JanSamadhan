@@ -414,26 +414,3 @@ Current Architecture (Monolithic MVC)
 4. **Mobile Native Extension:** The existing MVC controllers can be complemented with lightweight REST API endpoints (`/api/v1/complaints`) to power native Android/iOS field worker apps.
 
 ---
-
-## 9. Quick-Reference: How to Explain This Project (Interview / Viva Guide)
-
-### 9.1 The 30-Second Elevator Pitch
-> *"JanSamadhan is an enterprise-grade Civic Grievance Redressal platform built with ASP.NET Core 8, EF Core, and Leaflet GIS mapping. It automates how cities resolve civic problems like potholes and broken streetlights. Citizens submit GPS-tagged reports with photos, the system auto-routes them to specialized departments, and field technicians earn gamified points and badges by resolving issues with two-stage photographic proof. The entire workflow is backed by role-based security, proximity-based duplicate prevention, and real-time administrator heatmaps."*
-
-### 9.2 Key Technical Questions & Answers
-
-#### Q1: "Why did you build this in ASP.NET Core MVC instead of a React/Node stack?"
-* **Answer:** *"ASP.NET Core 8 offers industry-leading throughput, native memory efficiency, and compile-time type safety via C#. For a municipal system used in the field by workers on variable mobile networks, server-side Razor views eliminate massive JavaScript bundle downloads, delivering instant page rendering. Furthermore, ASP.NET Core provides out-of-the-box protection against CSRF, XSS, and SQL injection without relying on dozens of fragmented npm libraries."*
-
-#### Q2: "How does the system prevent fake or unresolved complaint closures?"
-* **Answer:** *"We implemented a Two-Stage Proof of Resolution mechanism in `TechnicianController`. A technician cannot mark an issue as 'Fixed' without uploading both a 'Work-in-Progress' photo and a 'Fixed' completion photo. Furthermore, once marked fixed, the reporting citizen is prompted to provide a 1-to-5 star rating and review, creating an audit loop that holds field staff accountable."*
-
-#### Q3: "How does the duplicate complaint detection work?"
-* **Answer:** *"When a citizen drops a pin on the map, the client invokes `MapController.Nearby`, which runs a bounding box calculation based on standard geographic conversion (1 degree ≈ 111 km). The server retrieves active complaints within a 200-meter radius, calculates accurate distance vectors, and renders existing tickets on the citizen's map to prevent redundant reporting."*
-
-#### Q4: "How is security handled across different user types?"
-* **Answer:** *"We use Claims-based Cookie Authentication with Role-Based Access Control (RBAC). Passwords are never stored in plaintext; they are salted with 128-bit cryptographic salts and hashed via 10,000 iterations of PBKDF2 with HMAC-SHA256. Controllers use `[Authorize(Roles = "...")]` attributes, and every data mutation validates user identity claims on the server to prevent IDOR attacks."*
-
----
-
-*Document compiled for the JanSamadhan Architectural Specification & Engineering Repository.*
