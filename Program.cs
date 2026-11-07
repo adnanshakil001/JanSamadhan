@@ -79,8 +79,8 @@ using (var scope = app.Services.CreateScope())
     {
         if (!db.Admins.Any())
         {
-            var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? config["Admin:Email"];
-            var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? config["Admin:Password"];
+            var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? config["Admin:Email"] ?? "adnan@admin";
+            var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? config["Admin:Password"] ?? "Admin@12";
             var adminName = Environment.GetEnvironmentVariable("ADMIN_NAME") ?? config["Admin:Name"] ?? "Administrator";
 
             if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword) && adminPassword != "Admin@1")
