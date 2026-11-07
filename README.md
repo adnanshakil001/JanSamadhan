@@ -244,10 +244,6 @@ JanSamadhan/
 │   ├── css/                          # Application styles
 │   └── uploads/                      # Upload directories (comments, technician)
 │
-├── docs/
-│   └── images/                       # Screenshots and documentation media
-│
-├── ui/                               # UI design variants and prototypes
 ├── Scripts/                          # Database seed scripts
 ├── .dockerignore                      # Docker build exclusions
 ├── .gitignore                         # Git exclusions (credentials & temporary files)
@@ -383,16 +379,6 @@ Administration
      ├── Department Management
      ├── Complaint Monitoring
      └── Map-based Analytics
-```
-
----
-
-## 📸 Screenshots
-
-Screenshots and project documentation can be found in:
-
-```text
-docs/images/
 ```
 
 ---
