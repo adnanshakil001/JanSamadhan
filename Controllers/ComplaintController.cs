@@ -310,7 +310,7 @@ namespace JanSamadhan.Controllers
             }
 
             // Check permissions
-            if (userRole == "Technician" && complaint.AssignedToUserId != userId)
+            if (userRole != "Admin" && (userRole != "Technician" || complaint.AssignedToUserId != userId))
             {
                 return Json(new { success = false, message = "You can only update complaints assigned to you." });
             }

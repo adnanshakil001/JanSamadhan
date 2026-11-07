@@ -182,7 +182,7 @@ namespace JanSamadhan.Controllers
                         return Json(new { success = false, message = "Work-in-progress photo must be a valid image (JPG, PNG, WebP) under 15MB." });
                     }
 
-                    var workPhotoName = $"{Guid.NewGuid()}_{Path.GetFileName(workInProgressPhoto.FileName)}";
+                    var workPhotoName = $"{Guid.NewGuid()}{Path.GetExtension(workInProgressPhoto.FileName).ToLowerInvariant()}";
                     var workPhotoPath = Path.Combine(uploadsPath, workPhotoName);
 
                     using (var stream = new FileStream(workPhotoPath, FileMode.Create))
@@ -213,7 +213,7 @@ namespace JanSamadhan.Controllers
                         return Json(new { success = false, message = "Fixed photo must be a valid image (JPG, PNG, WebP) under 15MB." });
                     }
 
-                    var fixedPhotoName = $"{Guid.NewGuid()}_{Path.GetFileName(fixedPhoto.FileName)}";
+                    var fixedPhotoName = $"{Guid.NewGuid()}{Path.GetExtension(fixedPhoto.FileName).ToLowerInvariant()}";
                     var fixedPhotoPath = Path.Combine(uploadsPath, fixedPhotoName);
 
                     using (var stream = new FileStream(fixedPhotoPath, FileMode.Create))

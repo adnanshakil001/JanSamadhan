@@ -90,9 +90,10 @@ namespace JanSamadhan.Controllers
 
                 foreach (var attachment in attachments.Take(3)) // Max 3 attachments
                 {
-                    if (attachment.Length > 0 && IsValidFileType(attachment))
+                    if (IsValidFileType(attachment))
                     {
-                        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(attachment.FileName)}";
+                        var ext = Path.GetExtension(attachment.FileName).ToLowerInvariant();
+                        var fileName = $"{Guid.NewGuid()}{ext}";
                         var filePath = Path.Combine(uploadsPath, fileName);
                         
                         using (var stream = System.IO.File.Create(filePath))
@@ -103,7 +104,7 @@ namespace JanSamadhan.Controllers
                         var commentAttachment = new CommentAttachment
                         {
                             CommentId = comment.CommentId,
-                            FileName = attachment.FileName,
+                            FileName = Path.GetFileName(attachment.FileName),
                             FilePath = $"/uploads/comments/{fileName}",
                             ContentType = attachment.ContentType,
                             FileSize = attachment.Length,
@@ -170,10 +171,26 @@ namespace JanSamadhan.Controllers
             return Json(new { success = true, comments });
         }
 
+        private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf"
+        };
+
+        private static readonly HashSet<string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"
+        };
+
         private bool IsValidFileType(IFormFile file)
         {
-            var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "application/pdf" };
-            return allowedTypes.Contains(file.ContentType.ToLower());
+            if (file == null || file.Length == 0 || file.Length > 15 * 1024 * 1024)
+                return false;
+
+            var ext = Path.GetExtension(file.FileName);
+            if (string.IsNullOrEmpty(ext) || !AllowedExtensions.Contains(ext))
+                return false;
+
+            return AllowedMimeTypes.Contains(file.ContentType.ToLowerInvariant());
         }
     }
 }

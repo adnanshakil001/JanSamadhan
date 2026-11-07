@@ -33,6 +33,7 @@
                         }
 
                         <form method="post" action="/Account/Register">
+                            @Html.AntiForgeryToken()
                             <div class="mb-3">
                                 <label class="form-label fw-semibold text-dark small mb-1">Full Name</label>
                                 <input class="form-control auth-input py-2 px-3" type="text" name="name" placeholder="e.g. Ramesh Kumar" required autofocus />

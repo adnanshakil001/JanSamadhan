@@ -371,6 +371,17 @@ namespace JanSamadhan.Controllers
             };
         }
 
+                private static string SanitizeCsvCell(string? input)
+        {
+            if (string.IsNullOrEmpty(input)) return string.Empty;
+            input = input.Replace("\"", "\"\"");
+            if (input.StartsWith("=") || input.StartsWith("+") || input.StartsWith("-") || input.StartsWith("@") || input.StartsWith("\t") || input.StartsWith("\r"))
+            {
+                return "'" + input;
+            }
+            return input;
+        }
+
         private IActionResult ExportToCsv(List<Complaint> complaints)
         {
             var csv = new System.Text.StringBuilder();
@@ -378,10 +389,10 @@ namespace JanSamadhan.Controllers
 
             foreach (var complaint in complaints)
             {
-                csv.AppendLine($"{complaint.ComplaintId},{complaint.Status},{complaint.ProblemType}," +
-                              $"\"{complaint.Description?.Replace("\"", "\"\"")}\"," +
-                              $"{complaint.User?.Name},{complaint.Department?.Name},{complaint.AssignedToUser?.Name}," +
-                              $"\"{complaint.Address?.Replace("\"", "\"\"")}\"," +
+                csv.AppendLine($"{complaint.ComplaintId},{complaint.Status},\"{SanitizeCsvCell(complaint.ProblemType)}\"," +
+                              $"\"{SanitizeCsvCell(complaint.Description)}\"," +
+                              $"\"{SanitizeCsvCell(complaint.User?.Name)}\",\"{SanitizeCsvCell(complaint.Department?.Name)}\",\"{SanitizeCsvCell(complaint.AssignedToUser?.Name)}\"," +
+                              $"\"{SanitizeCsvCell(complaint.Address)}\"," +
                               $"{complaint.Latitude},{complaint.Longitude}," +
                               $"{complaint.CreatedAt:yyyy-MM-dd HH:mm:ss}," +
                               $"{complaint.UpdatedAt:yyyy-MM-dd HH:mm:ss}");
@@ -398,10 +409,10 @@ namespace JanSamadhan.Controllers
 
             foreach (var complaint in complaints)
             {
-                csv.AppendLine($"{complaint.ComplaintId},{complaint.Status},{complaint.ProblemType}," +
-                              $"\"{complaint.Description?.Replace("\"", "\"\"")}\"," +
-                              $"{complaint.User?.Name},{complaint.Department?.Name},{complaint.AssignedToUser?.Name}," +
-                              $"\"{complaint.Address?.Replace("\"", "\"\"")}\"," +
+                csv.AppendLine($"{complaint.ComplaintId},{complaint.Status},\"{SanitizeCsvCell(complaint.ProblemType)}\"," +
+                              $"\"{SanitizeCsvCell(complaint.Description)}\"," +
+                              $"\"{SanitizeCsvCell(complaint.User?.Name)}\",\"{SanitizeCsvCell(complaint.Department?.Name)}\",\"{SanitizeCsvCell(complaint.AssignedToUser?.Name)}\"," +
+                              $"\"{SanitizeCsvCell(complaint.Address)}\"," +
                               $"{complaint.Latitude},{complaint.Longitude}," +
                               $"{complaint.CreatedAt:yyyy-MM-dd HH:mm:ss}," +
                               $"{complaint.UpdatedAt:yyyy-MM-dd HH:mm:ss}");

@@ -33,6 +33,7 @@
                         }
 
                         <form method="post" action="/Account/Login">
+                            @Html.AntiForgeryToken()
                             <div class="mb-3">
                                 <label class="form-label fw-semibold text-dark small mb-1">Email Address</label>
                                 <input class="form-control auth-input py-2 px-3" type="email" name="email" placeholder="user@domain.gov" required autofocus />

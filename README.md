@@ -154,7 +154,7 @@ JanSamadhan follows a **multi-tier ASP.NET Core MVC architecture**.
 ┌─────────────────────────────────────────────┐
 │                DATABASE LAYER               │
 │                                             │
-│ Microsoft SQL Server / LocalDB              │
+│ SQLite (Default) / MS SQL Server            │
 │ Users │ Complaints │ Departments            │
 │ Assignments │ Comments │ Ratings            │
 └─────────────────────────────────────────────┘
@@ -174,10 +174,11 @@ JanSamadhan follows a **multi-tier ASP.NET Core MVC architecture**.
 | Mapping             | Leaflet.js                           |
 | Map Data            | OpenStreetMap                        |
 | ORM                 | Entity Framework Core 8              |
-| Database            | Microsoft SQL Server / LocalDB       |
+| Database            | SQLite (Default) / MS SQL Server     |
 | Authentication      | Cookie Authentication                |
 | Authorization       | Role-Based Access Control (RBAC)     |
-| Password Security   | PBKDF2 Key Derivation                |
+| Password Security   | PBKDF2 (100,000 Iterations, Salted)  |
+| Containerization    | Docker (Multi-Stage .NET 8)          |
 | Database Migrations | EF Core Migrations                   |
 | IDE                 | Visual Studio 2022 / VS Code         |
 
@@ -253,66 +254,65 @@ git clone https://github.com/adnanshakil001/JanSamadhan.git
 cd JanSamadhan
 ```
 
-### 2. Configure the Database
+### 2. Run the Application (Local Development)
 
-Update the connection string in:
-
-```text
-appsettings.json
-```
-
-Example:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=JanSamadhanDb;Trusted_Connection=True;TrustServerCertificate=True;"
-  }
-}
-```
-
-> Use your own SQL Server connection string if you are not using LocalDB.
-
-### 3. Apply Database Migrations
-
-Run:
-
-```bash
-dotnet ef database update
-```
-
-If the EF CLI tool is not installed:
-
-```bash
-dotnet tool install --global dotnet-ef
-```
-
-### 4. Restore Dependencies
+JanSamadhan is pre-configured with **SQLite** for rapid local bootstrapping. Simply restore dependencies and run:
 
 ```bash
 dotnet restore
-```
-
-### 5. Run the Application
-
-```bash
 dotnet run
 ```
 
-Or run the project directly through **Visual Studio 2022**.
+Open your browser at `http://localhost:5000` (or the port displayed in your terminal).
+
+> **Note for SQL Server**: If you prefer Microsoft SQL Server or LocalDB, update `DefaultConnection` in `appsettings.json` and enable `options.UseSqlServer(...)` in `Program.cs`.
 
 ---
 
-## 🔐 Security
+### 🐳 Run with Docker
 
-JanSamadhan implements several security mechanisms, including:
+To build and run JanSamadhan as a self-contained container:
 
-* Cookie-based authentication
-* Role-Based Access Control
-* Secure password hashing using PBKDF2
-* Protected administrative routes
-* Entity Framework Core parameterized database operations
-* Server-side authorization checks
+```bash
+# 1. Build the Docker image
+docker build -t jansamadhan .
+
+# 2. Run the container on port 8080 with persistent data volumes
+docker run -p 8080:8080 -v jansamadhan_data:/app/data -v jansamadhan_uploads:/app/wwwroot/uploads jansamadhan
+```
+
+Visit `http://localhost:8080`.
+
+---
+
+### ☁️ Cloud Deployment (Render / Railway / VPS)
+
+JanSamadhan includes a production-ready `Dockerfile` compatible with container-native cloud platforms:
+
+1. Push your repository to GitHub.
+2. In **Render** or **Railway**, create a new **Web Service** and connect this repository.
+3. Select **Docker** as the runtime.
+4. Set the following environment variables:
+   * `ASPNETCORE_ENVIRONMENT`: `Production`
+   * `ADMIN_EMAIL`: `your-admin-email@example.com`
+   * `ADMIN_PASSWORD`: `YourStrongSecretPassword123!`
+5. (Recommended) Mount a persistent disk at `/app/data` to persist the SQLite database across restarts.
+
+---
+
+## 🔐 Security & Hardening
+
+JanSamadhan implements comprehensive, production-grade security mechanisms:
+
+* **Dual-Channel CSRF Protection:** Enforces server-side `AutoValidateAntiforgeryTokenAttribute` on all POST actions, HTML form verification tokens, and automatic `X-CSRF-TOKEN` header injection via `$.ajaxSetup` for all AJAX/`$.post` operations.
+* **Cryptographic Password Security:** Salted PBKDF2 key derivation using HMAC-SHA256 with **100,000 iterations** and 128-bit CSPRNG salts, verified via constant-time comparison to prevent timing attacks.
+* **Zero-Trust File Upload Validation:** Enforced across complaint, technician, and comment uploads with extension whitelisting (`.jpg`, `.png`, `.webp`, `.gif`, `.pdf`), MIME cross-validation, 15MB file-size limits, and pure GUID file renaming to prevent webshell and directory traversal attacks.
+* **Role-Based Access Control (RBAC):** Strict policy and route enforcement across Citizen (`User`), `Technician`, `DepartmentManager`, and `Admin` actors.
+* **Insecure Direct Object Reference (IDOR) Mitigation:** Server-side ownership validation and restricted state-machine transitions preventing unauthorized complaint manipulation.
+* **Hardened Transport & Session Cookies:** Encrypted auth cookies configured with `HttpOnly = true`, `CookieSecurePolicy.Always`, `SameSite = SameSiteMode.Lax`, and 7-day sliding expiration.
+* **Spreadsheet Formula Injection Sanitization:** Cell escaping in CSV/Excel reporting pipelines to neutralize CWE-1236 attacks.
+* **Zero Hardcoded Secrets:** Runtime environment variable injection for production administrator initialization (`ADMIN_EMAIL`, `ADMIN_PASSWORD`).
+* **SQL Injection Immunity:** 100% parameterized LINQ queries through Entity Framework Core 8.
 
 ---
 
@@ -375,22 +375,10 @@ docs/images/
 
 ## 📋 Documentation
 
-The repository also contains the detailed **Requirement Analysis** document covering:
+Comprehensive architectural specifications and engineering documentation:
 
-* Problem definition
-* Stakeholders
-* Actors
-* Functional requirements
-* System architecture
-* Technology stack
-* Complaint lifecycle
-* Database requirements
-* Security requirements
-* Non-functional requirements
-
-See:
-
-[`Requirement_Analysis.md`](./Requirement_Analysis.md)
+* **System Design Blueprint:** Detailed architecture, data flow diagrams, geospatial math, and interview Q&A in [`SYSTEM_DESIGN.md`](./SYSTEM_DESIGN.md).
+* **Requirement Analysis Specification:** Full requirements specification available in [`Requirement_Analysis_v2.pdf`](./Requirement_Analysis_v2.pdf).
 
 ---
 

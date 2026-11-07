@@ -1,3 +1,4 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @{
     var isAuthenticated = Context.User?.Identity?.IsAuthenticated ?? false;
     var isAdmin = Context.User?.IsInRole("Admin") ?? false;
@@ -27,6 +28,19 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <script>
+        $(function() {
+            var token = $('meta[name="csrf-token"]').attr('content');
+            if (token) {
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': token
+                    }
+                });
+            }
+        });
+    </script>
 </head>
 <body>
     @if (ViewData["HideDefaultNav"] as bool? != true)

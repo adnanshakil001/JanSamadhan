@@ -10,3 +10,20 @@
 *.db
 *.db-shm
 *.db-wal
+
+## Environment & Secrets
+.env
+.env.*
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Local.json
+
+## Private documentation with credentials
+SYSTEM_DESIGN.md
+
+## User uploads
+wwwroot/uploads/*
+!wwwroot/uploads/comments/
+!wwwroot/uploads/technician/
+wwwroot/uploads/comments/*
+wwwroot/uploads/technician/*
