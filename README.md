@@ -200,38 +200,62 @@ JanSamadhan follows a **multi-tier ASP.NET Core MVC architecture**.
 JanSamadhan/
 │
 ├── Controllers/
-│   ├── AccountController.cs
-│   ├── ComplaintController.cs
-│   ├── TechnicianController.cs
-│   └── AdminController.cs
+│   ├── AccountController.cs          # Authentication, session cookies & user profiles
+│   ├── AdminController.cs            # Admin dashboard, triage, assignment & CSV export
+│   ├── BadgeController.cs            # Gamification badge showcase
+│   ├── CommentController.cs          # Multi-party threaded comments & secure attachments
+│   ├── ComplaintController.cs        # Grievance ingestion, GPS capture, ratings & status
+│   ├── DepartmentController.cs       # Department-level triage & assignment
+│   ├── HomeController.cs             # Landing page, nearby issues & scoreboards
+│   ├── MapController.cs              # GeoJSON streaming & bounding-box proximity API
+│   ├── RoleController.cs             # Administrative RBAC role assignment
+│   └── TechnicianController.cs       # Work order queue, two-stage photo uploads & points
 │
 ├── Data/
-│   └── ApplicationDbContext.cs
-│
-├── Migrations/
+│   └── ApplicationDbContext.cs       # Entity Framework Core DbContext & relationships
 │
 ├── Models/
+│   ├── Admin.cs                      # Administrator credentials & profile
+│   ├── Badge.cs                      # Gamification tier thresholds & icons
+│   ├── Comment.cs                    # Threaded discussions & visibility flags
+│   ├── Complaint.cs                  # Core grievance entity with GPS & department link
+│   ├── ComplaintAssignment.cs        # Work-order dispatch history & audit logs
+│   ├── ComplaintRating.cs            # 1-5 star citizen reviews & feedback
+│   ├── Department.cs                 # Municipal department master data
+│   ├── TechnicianPhoto.cs            # In-progress & fixed photo proof records
+│   └── User.cs                       # Citizens & field technician profiles
 │
 ├── Services/
+│   └── PasswordService.cs            # PBKDF2 HMAC-SHA256 (100,000 iterations) hashing
 │
 ├── Views/
-│   ├── Account/
-│   ├── Complaint/
-│   ├── Technician/
-│   ├── Admin/
-│   └── Shared/
+│   ├── Account/                      # Citizen, Admin & Technician login/register views
+│   ├── Admin/                        # Admin dashboard, triage, user & scoreboard views
+│   ├── Badge/                        # Gamification badge showcase
+│   ├── Complaint/                    # Filing, detail tracking & rating views
+│   ├── Department/                   # Department management views
+│   ├── Home/                         # Landing page, nearby discovery & leaderboards
+│   ├── Map/                          # Geospatial GIS map interfaces
+│   ├── Role/                         # Administrative role management console
+│   ├── Shared/                       # _Layout with CSRF token & common partials
+│   └── Technician/                   # Technician workspace, dual-photo upload & queue
 │
 ├── wwwroot/
-│
-├── Scripts/
+│   ├── css/                          # Application styles
+│   └── uploads/                      # Upload directories (comments, technician)
 │
 ├── docs/
-│   └── images/
+│   └── images/                       # Screenshots and documentation media
 │
-├── Program.cs
-├── DesignTimeDbContextFactory.cs
-├── appsettings.json
-└── JanSamadhan.csproj
+├── ui/                               # UI design variants and prototypes
+├── Scripts/                          # Database seed scripts
+├── .dockerignore                      # Docker build exclusions
+├── .gitignore                         # Git exclusions (credentials & temporary files)
+├── Dockerfile                         # Production multi-stage .NET 8 Dockerfile
+├── Program.cs                         # Application entry point, DI & middleware pipeline
+├── DesignTimeDbContextFactory.cs      # EF Core design-time factory
+├── JanSamadhan.csproj                 # Project manifest & NuGet dependencies
+└── Requirement_Analysis_v2.pdf       # Software requirements specification
 ```
 
 ---
