@@ -1,0 +1,252 @@
+@{
+    var user = Context.User;
+    var isAuthenticated = user?.Identity?.IsAuthenticated ?? false;
+    var isAdmin = user?.IsInRole("Admin") ?? false;
+    var isTechnician = user?.IsInRole("Technician") ?? false;
+    var isDepartmentManager = user?.IsInRole("DepartmentManager") ?? false;
+    var isCitizen = isAuthenticated && !isAdmin && !isTechnician && !isDepartmentManager;
+
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+
+    string Friendly(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var builder = new System.Text.StringBuilder(value.Length + 4);
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(value[i]) && !char.IsUpper(value[i - 1]))
+            {
+                builder.Append(' ');
+            }
+            builder.Append(value[i]);
+        }
+        return builder.ToString();
+    }
+
+    var controllerLabel = controller == "Home" ? "Home" : Friendly(controller);
+    var actionLabel = action == "Index" ? controllerLabel : Friendly(action);
+
+    var rawTitle = ViewData["Title"] as string;
+    string pageTitle = actionLabel;
+    if (!string.IsNullOrWhiteSpace(rawTitle))
+    {
+        var cleaned = rawTitle.Split(new[] { " — ", " - ", " – " }, StringSplitOptions.RemoveEmptyEntries);
+        pageTitle = cleaned.Length > 0 ? cleaned[0].Trim() : rawTitle.Trim();
+    }
+
+    var displayName = user?.FindFirst(ClaimTypes.Name)?.Value ?? user?.Identity?.Name ?? "Guest";
+    var initial = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Substring(0, 1).ToUpperInvariant();
+    var roleLabel = isAdmin ? "Administrator"
+        : isTechnician ? "Field Technician"
+        : isDepartmentManager ? "Department Manager"
+        : isCitizen ? "Citizen"
+        : "Visitor";
+
+    var showControllerCrumb = !string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase);
+    var showActionCrumb = !string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
+
+    // Only link a controller crumb when that controller really exposes /Index.
+    var controllerLanding = controller.ToLowerInvariant() switch
+    {
+        "admin" or "badge" or "complaint" or "department" or "home" or "role" => "/" + controller,
+        _ => null
+    };
+}
+
+<header class="app-topnav">
+    <button type="button"
+            class="app-topnav__menu"
+            data-sidebar-toggle
+            aria-controls="appSidebar"
+            aria-expanded="false"
+            aria-label="Toggle navigation sidebar">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+    </button>
+
+    <div class="app-topnav__heading">
+        <nav aria-label="Breadcrumb">
+            <ol class="app-breadcrumbs">
+                <li>
+                    @if (controller == "Home" && action == "Index")
+                    {
+                        <span aria-current="page">Home</span>
+                    }
+                    else
+                    {
+                        <a href="/">Home</a>
+                    }
+                </li>
+
+                @if (showControllerCrumb)
+                {
+                    <li>
+                        @if (showActionCrumb && controllerLanding != null)
+                        {
+                            <a href="@controllerLanding">@controllerLabel</a>
+                        }
+                        else
+                        {
+                            <span aria-current="@(showActionCrumb ? null : "page")">@controllerLabel</span>
+                        }
+                    </li>
+                }
+
+                @if (showActionCrumb)
+                {
+                    <li>
+                        <span aria-current="page">@actionLabel</span>
+                    </li>
+                }
+            </ol>
+        </nav>
+        <h1 class="app-topnav__title">@pageTitle</h1>
+    </div>
+
+    <div class="app-topnav__actions">
+        @if (isAuthenticated)
+        {
+            @if (isAdmin)
+            {
+                <a class="app-quick-action" href="/Admin/CreateTechnician">
+                    <i class="fas fa-user-plus" aria-hidden="true"></i>
+                    <span>New technician</span>
+                </a>
+            }
+            else if (isTechnician)
+            {
+                <a class="app-quick-action" href="/Technician/AvailableWork">
+                    <i class="fas fa-briefcase" aria-hidden="true"></i>
+                    <span>Available work</span>
+                </a>
+            }
+            else if (isDepartmentManager)
+            {
+                <a class="app-quick-action" href="/Department">
+                    <i class="fas fa-list-check" aria-hidden="true"></i>
+                    <span>Department queue</span>
+                </a>
+            }
+            else
+            {
+                <a class="app-quick-action" href="/Complaint/Create">
+                    <i class="fas fa-circle-plus" aria-hidden="true"></i>
+                    <span>Report an issue</span>
+                </a>
+            }
+
+            <div class="dropdown app-profile">
+                <button type="button"
+                        class="app-profile__toggle dropdown-toggle"
+                        id="profileMenu"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        aria-haspopup="true"
+                        aria-label="Account menu for @displayName">
+                    <span class="app-profile__avatar" aria-hidden="true">@initial</span>
+                    <span class="app-profile__meta">
+                        <span class="app-profile__name">@displayName</span>
+                        <span class="app-profile__role">@roleLabel</span>
+                    </span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
+                    <li>
+                        <h6 class="dropdown-header">Signed in as @displayName</h6>
+                    </li>
+                    @if (!isDepartmentManager)
+                    {
+                        <li>
+                            <a class="dropdown-item" href="/Account/Profile">
+                                <i class="fas fa-user" aria-hidden="true"></i>
+                                <span>My profile</span>
+                            </a>
+                        </li>
+                    }
+                    @if (isAdmin)
+                    {
+                        <li>
+                            <a class="dropdown-item" href="/Admin">
+                                <i class="fas fa-table-columns" aria-hidden="true"></i>
+                                <span>Admin dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/Role">
+                                <i class="fas fa-users-gear" aria-hidden="true"></i>
+                                <span>Role management</span>
+                            </a>
+                        </li>
+                    }
+                    else if (isTechnician)
+                    {
+                        <li>
+                            <a class="dropdown-item" href="/Technician/Dashboard">
+                                <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+                                <span>My tasks</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/Technician/Scoreboard">
+                                <i class="fas fa-chart-simple" aria-hidden="true"></i>
+                                <span>Performance</span>
+                            </a>
+                        </li>
+                    }
+                    else if (isDepartmentManager)
+                    {
+                        <li>
+                            <a class="dropdown-item" href="/Department">
+                                <i class="fas fa-list-check" aria-hidden="true"></i>
+                                <span>Department queue</span>
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li>
+                            <a class="dropdown-item" href="/Complaint">
+                                <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                                <span>My complaints</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/Badge">
+                                <i class="fas fa-medal" aria-hidden="true"></i>
+                                <span>Badges &amp; rewards</span>
+                            </a>
+                        </li>
+                    }
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                        <a class="dropdown-item is-danger" href="/Account/Logout">
+                            <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                            <span>Sign out</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <a class="app-topnav__logout"
+               href="/Account/Logout"
+               title="Sign out"
+               aria-label="Sign out">
+                <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+            </a>
+        }
+        else
+        {
+            <a class="app-quick-action" href="/Account/Login">
+                <i class="fas fa-right-to-bracket" aria-hidden="true"></i>
+                <span>Sign in</span>
+            </a>
+            <a class="app-quick-action" href="/Account/Register">
+                <i class="fas fa-user-plus" aria-hidden="true"></i>
+                <span>Create account</span>
+            </a>
+        }
+    </div>
+</header>

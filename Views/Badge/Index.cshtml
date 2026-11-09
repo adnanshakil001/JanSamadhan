@@ -1,178 +1,159 @@
 @model IEnumerable<JanSamadhan.Models.Badge>
+@inject JanSamadhan.Data.ApplicationDbContext DbContext
 @{
-    ViewData["Title"] = "Civic Badges & Rewards - JanSamadhan";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
+    ViewData["Title"] = "Civic Badges & Rewards — JanSamadhan";
+    var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    int.TryParse(userIdClaim, out int currentUserId);
+    var currentUser = DbContext.Users.Find(currentUserId);
+
+    var userPoints = currentUser?.Points ?? 0;
+    var userTier = currentUser?.BadgeLevel ?? "Bronze";
+
+    // Calculate Next Milestone
+    var nextBadge = Model.FirstOrDefault(b => b.PointsRequired > userPoints);
+    var nextPoints = nextBadge != null ? nextBadge.PointsRequired : (userPoints > 0 ? userPoints : 100);
+    var prevBadge = Model.LastOrDefault(b => b.PointsRequired <= userPoints);
+    var prevPoints = prevBadge != null ? prevBadge.PointsRequired : 0;
+    var progressPercent = nextBadge != null ? Math.Min(100, Math.Max(5, (int)(((double)(userPoints - prevPoints) / (nextPoints - prevPoints)) * 100))) : 100;
 }
 
-<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+<!-- Gamification Hero Card -->
+<section class="badge-hero-card" aria-label="Citizen Tier Status">
+    <div class="badge-hero__info">
+        <div class="badge-hero__avatar" aria-hidden="true">
+            <i class="fas fa-trophy"></i>
+        </div>
         <div>
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
-
-            <nav class="nav flex-column gap-1">
-                <a href="/Complaint" class="sidebar-link">
-                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
-                </a>
-                <a href="/Complaint/Create" class="sidebar-link">
-                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
-                </a>
-                <a href="/Home/Nearby" class="sidebar-link">
-                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
-                </a>
-                <a href="/Badge" class="sidebar-link active">
-                    <i class="fas fa-medal me-3"></i> Badges & Rewards
-                </a>
-                <a href="/Home/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-trophy me-3"></i> Leaderboard
-                </a>
-            </nav>
+            <span class="badge bg-white bg-opacity-25 rounded-pill px-3 py-1 small fw-semibold text-white mb-2 d-inline-block">
+                Verified Civic Contributor
+            </span>
+            <h1 class="badge-hero__tier">@userTier Citizen</h1>
+            <p class="badge-hero__points">
+                <i class="fas fa-award text-warning me-1" aria-hidden="true"></i><strong>@userPoints</strong> Lifetime Civic Points Earned
+            </p>
         </div>
-
-        <div class="pt-3 border-top">
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-4">
-                <a href="/Complaint" class="top-tab-link">My Complaints</a>
-                <a href="/Complaint/Create" class="top-tab-link text-success fw-bold">+ Report Issue</a>
-                <a href="/Home/Nearby" class="top-tab-link">Nearby Map</a>
-                <a href="/Badge" class="top-tab-link active">Badges & Rewards</a>
-                <a href="/Home/Scoreboard" class="top-tab-link">Leaderboard</a>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
-
-        <main class="p-4 flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">Civic Tier Badges & Milestone Rewards</h2>
-                    <p class="text-muted mb-0 small">Earn civic points for reporting verified issues, giving resolution feedback, and climbing ranks</p>
-                </div>
-            </div>
-
-            <!-- How Points Work Banner -->
-            <div class="card border rounded-4 p-4 shadow-sm bg-white mb-4">
-                <h5 class="fw-bold mb-3 text-dark"><i class="fas fa-award text-warning me-2"></i>How to Earn Civic Points</h5>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge bg-primary rounded-pill">+10 Pts</span>
-                                <strong class="text-dark small">Report a Grievance</strong>
-                            </div>
-                            <small class="text-muted">Earn points each time you report a photo-verified street anomaly.</small>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge bg-success rounded-pill">+5 Pts</span>
-                                <strong class="text-dark small">Rate Resolution Proof</strong>
-                            </div>
-                            <small class="text-muted">Provide star feedback once field work is marked as fixed.</small>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge bg-warning text-dark rounded-pill">Top Rank</span>
-                                <strong class="text-dark small">City Leaderboard</strong>
-                            </div>
-                            <small class="text-muted">Climb city leaderboards and unlock municipal civic recognition.</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Badge Tiers Grid -->
-            <h5 class="fw-bold text-dark mb-3">Milestone Tiers</h5>
-            <div class="row g-4">
-                @foreach (var b in Model)
-                {
-                    var isGold = b.LevelName == "Gold";
-                    var isSilver = b.LevelName == "Silver";
-                    var isPlatinum = b.LevelName == "Platinum" || b.LevelName == "Diamond";
-                    var iconClass = isGold ? "fa-crown text-warning" : (isSilver ? "fa-medal text-secondary" : (isPlatinum ? "fa-gem text-info" : "fa-shield-alt text-dark"));
-
-                    <div class="col-lg-3 col-sm-6">
-                        <div class="card h-100 border rounded-4 p-4 text-center bg-white shadow-sm">
-                            <div class="mb-3">
-                                <i class="fas @iconClass fa-3x"></i>
-                            </div>
-                            <h4 class="fw-bold text-dark mb-1">@b.LevelName</h4>
-                            <p class="text-muted small mb-3">Requires <span class="badge bg-light text-dark border fw-bold">@b.PointsRequired Points</span></p>
-                            <div class="mt-auto">
-                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 small fw-semibold">
-                                    Official Municipal Badge
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </main>
     </div>
-</div>
 
-<style>
-.citizen-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+    <!-- Progress to next tier -->
+    <div class="badge-progress-container">
+        <div class="badge-progress-label">
+            @if (nextBadge != null)
+            {
+                <span>Next Tier: <strong>@nextBadge.LevelName</strong></span>
+                <span>@(nextBadge.PointsRequired - userPoints) pts remaining</span>
+            }
+            else
+            {
+                <span>Apex Rank: <strong>Top Civic Honor</strong></span>
+                <span>Max Level</span>
+            }
+        </div>
+        <div class="badge-progress-bar" role="progressbar" aria-valuenow="@progressPercent" aria-valuemin="0" aria-valuemax="100">
+            <div class="badge-progress-fill" style="width: @progressPercent%;"></div>
+        </div>
+        <div class="text-end mt-2">
+            <a href="/Complaint/Create" class="btn btn-sm btn-light rounded-pill px-3 fw-semibold">
+                <i class="fas fa-plus me-1 text-primary" aria-hidden="true"></i>Report Problem (+10 Pts)
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- How to Earn Points Section -->
+<section class="mb-5" aria-labelledby="how-earn-title">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="h5 fw-bold text-dark mb-0" id="how-earn-title">
+            <i class="fas fa-star text-warning me-2" aria-hidden="true"></i>How to Earn Civic Points
+        </h2>
+        <a href="/Home/Scoreboard" class="small text-primary text-decoration-none fw-semibold">
+            View City Leaderboard <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+        </a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card border rounded-4 p-4 bg-white h-100 shadow-xs">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 fw-bold">+10 Pts</span>
+                    <strong class="text-dark small">Report Civic Problem</strong>
+                </div>
+                <p class="text-muted small mb-0">
+                    File a valid geo-pinned complaint with photo evidence. Points award upon municipal verification.
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border rounded-4 p-4 bg-white h-100 shadow-xs">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold">+5 Pts</span>
+                    <strong class="text-dark small">Rate Resolution Proof</strong>
+                </div>
+                <p class="text-muted small mb-0">
+                    Review completed field technician work and submit star quality feedback once your case is fixed.
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border rounded-4 p-4 bg-white h-100 shadow-xs">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill px-3 py-1 fw-bold">Recognition</span>
+                    <strong class="text-dark small">Ward Leaderboards</strong>
+                </div>
+                <p class="text-muted small mb-0">
+                    Climb public city scoreboards and receive official civic commendation for neighbourhood stewardship.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Milestone Badges Grid -->
+<section aria-labelledby="milestone-title">
+    <div class="mb-4">
+        <h2 class="h5 fw-bold text-dark mb-1" id="milestone-title">Milestone Tiers & Recognition</h2>
+        <p class="text-muted small mb-0">Unlock higher status badges as your community impact expands.</p>
+    </div>
+
+    <div class="tier-grid">
+        @foreach (var badge in Model)
+        {
+            var isUnlocked = userPoints >= badge.PointsRequired;
+            var isGold = badge.LevelName.Equals("Gold", StringComparison.OrdinalIgnoreCase);
+            var isSilver = badge.LevelName.Equals("Silver", StringComparison.OrdinalIgnoreCase);
+            var isPlatinum = badge.LevelName.Equals("Platinum", StringComparison.OrdinalIgnoreCase) || badge.LevelName.Equals("Diamond", StringComparison.OrdinalIgnoreCase);
+
+            var cardModifier = isUnlocked ? "is-unlocked" : "is-locked";
+            if (isGold) cardModifier += " is-gold";
+            if (isPlatinum) cardModifier += " is-platinum";
+
+            var iconClass = isGold ? "fa-crown" : (isSilver ? "fa-medal" : (isPlatinum ? "fa-gem" : "fa-shield-halved"));
+
+            <article class="tier-card @cardModifier">
+                <div class="tier-icon-wrap" aria-hidden="true">
+                    <i class="fas @iconClass"></i>
+                </div>
+                <h3 class="tier-title">@badge.LevelName</h3>
+                <span class="tier-req">Requires @badge.PointsRequired Civic Pts</span>
+
+                @if (isUnlocked)
+                {
+                    <span class="tier-status-pill tier-status-pill--unlocked">
+                        <i class="fas fa-check" aria-hidden="true"></i> Unlocked
+                    </span>
+                }
+                else
+                {
+                    <span class="tier-status-pill tier-status-pill--locked">
+                        <i class="fas fa-lock me-1" aria-hidden="true"></i> @(badge.PointsRequired - userPoints) pts to unlock
+                    </span>
+                }
+            </article>
+        }
+    </div>
+</section>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/badges-map.css" asp-append-version="true" />
 }
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-}
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-.top-tab-link {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding-bottom: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-.top-tab-link:hover {
-    color: #0f172a;
-}
-.top-tab-link.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
-    font-weight: 600;
-}
-</style>

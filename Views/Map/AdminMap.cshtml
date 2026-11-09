@@ -1,374 +1,461 @@
+@inject JanSamadhan.Data.ApplicationDbContext DbContext
+@using Microsoft.EntityFrameworkCore
 @{
-    ViewData["Title"] = "Geospatial Map View - Admin";
-    ViewData["HideDefaultNav"] = true;
+    ViewData["Title"] = "Geospatial Command Center - JanSamadhan";
     ViewData["FullWidth"] = true;
+
+    var activeDepartments = await DbContext.Departments.Where(d => d.IsActive).OrderBy(d => d.Name).ToListAsync();
 }
 
-<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
-        <div>
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="~/css/admin-gis-map.css" asp-append-version="true" />
+}
 
-            <nav class="nav flex-column gap-1">
-                <a href="/Admin" class="sidebar-link">
-                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
-                </a>
-                <a href="/Map/AdminMap" class="sidebar-link active">
-                    <i class="fas fa-map-marked-alt me-3"></i> Map View
-                </a>
-                <a href="/Role" class="sidebar-link">
-                    <i class="fas fa-users-cog me-3"></i> Role Management
-                </a>
-                <a href="/Admin/TechnicianScoreboard" class="sidebar-link">
-                    <i class="fas fa-chart-line me-3"></i> Technician Board
-                </a>
-                <a href="/Admin/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> User Scoreboard
-                </a>
-            </nav>
+<div class="gis-map-viewport" id="gisViewport">
+    <!-- 1. Fullscreen Map Canvas -->
+    <div id="map" role="region" aria-label="Geospatial City Map"></div>
+
+    <!-- 2. Floating Frosted-Glass GIS Controls Panel (Top-Left) -->
+    <aside class="gis-floating-panel" id="gisControlPanel" aria-label="GIS Map Filter Controls">
+        <div class="gis-panel-header">
+            <h1 class="gis-panel-title">
+                <i class="fas fa-satellite-dish text-primary" aria-hidden="true"></i>
+                <span>GIS Command Center</span>
+            </h1>
+            <div class="d-flex align-items-center gap-1">
+                <span class="badge bg-primary rounded-pill text-xs px-2" id="incidentCounterBadge">0 Incidents</span>
+                <button type="button" class="gis-toggle-btn" id="togglePanelBtn" aria-label="Toggle Controls Panel" title="Collapse / Expand Panel">
+                    <i class="fas fa-chevron-up" id="togglePanelIcon" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
 
-        <div class="pt-3 border-top">
-            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
-                <i class="fas fa-user-plus"></i> + Add Technician
-            </a>
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-cog"></i> Settings
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+        <div class="gis-panel-body">
+            <!-- Status Filter Segmented Pills -->
+            <div class="mb-3">
+                <span class="gis-label">Incident Status Filter</span>
+                <div class="gis-status-pills" role="radiogroup" aria-label="Status Filters">
+                    <button type="button" class="gis-filter-pill is-active" data-status="" aria-pressed="true">
+                        <span>All</span>
+                    </button>
+                    <button type="button" class="gis-filter-pill gis-filter-pill--pending" data-status="Pending" aria-pressed="false">
+                        <i class="fas fa-clock" aria-hidden="true"></i>
+                        <span>Pending</span>
+                    </button>
+                    <button type="button" class="gis-filter-pill gis-filter-pill--inprogress" data-status="InProgress" aria-pressed="false">
+                        <i class="fas fa-wrench" aria-hidden="true"></i>
+                        <span>In Progress</span>
+                    </button>
+                    <button type="button" class="gis-filter-pill gis-filter-pill--fixed" data-status="Fixed" aria-pressed="false">
+                        <i class="fas fa-circle-check" aria-hidden="true"></i>
+                        <span>Resolved</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Municipal Department Select -->
+            <div class="mb-3">
+                <label class="gis-label mb-1" for="gisDepartmentFilter">Department Jurisdiction</label>
+                <select id="gisDepartmentFilter" class="form-select form-select-sm rounded-3">
+                    <option value="">All Civic Departments</option>
+                    @foreach (var dept in activeDepartments)
+                    {
+                        <option value="@dept.DepartmentId">@dept.Name</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Date Range Filter -->
+            <div class="mb-3">
+                <span class="gis-label">Incident Window</span>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="date" id="gisFromDate" class="form-control form-control-sm rounded-3" aria-label="From Date" title="From Date" />
+                    </div>
+                    <div class="col-6">
+                        <input type="date" id="gisToDate" class="form-control form-control-sm rounded-3" aria-label="To Date" title="To Date" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Layer Toggles -->
+            <div class="gis-layer-box">
+                <span class="gis-label mb-1">Visualization Layers</span>
+                <label class="gis-checkbox-row">
+                    <input type="checkbox" id="layerMarkers" checked />
+                    <span>Discrete Point Markers</span>
+                </label>
+                <label class="gis-checkbox-row">
+                    <input type="checkbox" id="layerClusters" checked />
+                    <span>Dynamic Density Clusters</span>
+                </label>
+                <label class="gis-checkbox-row">
+                    <input type="checkbox" id="layerHeatmap" />
+                    <span>Spatial Heatmap Overlay</span>
+                </label>
+            </div>
+
+            <!-- Reset Map Action -->
+            <div class="mt-3 d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill w-100 fw-semibold" id="btnFitBounds">
+                    <i class="fas fa-compress me-1" aria-hidden="true"></i> Fit All Points
+                </button>
+                <button type="button" class="btn btn-light btn-sm rounded-pill px-3" id="btnResetFilters" title="Reset all filters">
+                    Reset
+                </button>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-4">
-                <a href="/Admin" class="top-tab-link">Admin Dashboard</a>
-                <a href="/Admin/CreateTechnician" class="top-tab-link text-success fw-bold">+ Create Technician</a>
-                <a href="/Role" class="top-tab-link">Role Management</a>
-                <a href="/Map/AdminMap" class="top-tab-link active">Map View</a>
+    <!-- 3. Slide-In Off-Canvas Incident Inspection Drawer (Right) -->
+    <aside class="gis-offcanvas-drawer" id="gisIncidentDrawer" aria-label="Incident Inspection Dossier">
+        <div class="gis-drawer-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border fw-bold text-xs" id="drawerCategory">Pothole</span>
+                <span class="badge rounded-pill text-xs" id="drawerStatusBadge">Pending</span>
             </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
+            <button type="button" class="gis-drawer-close-btn" id="drawerCloseBtn" aria-label="Close dossier">
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
 
-        <main class="p-4 flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="gis-drawer-body">
+            <!-- Incident Title & ID -->
+            <div>
+                <h2 class="h5 fw-bold text-dark mb-1" id="drawerTitle">Complaint #102</h2>
+                <span class="text-muted small" id="drawerTimestamp">Reported 2 hours ago</span>
+            </div>
+
+            <!-- Photo Thumbnail if present -->
+            <div id="drawerPhotoWrapper" style="display: none;">
+                <img src="" id="drawerPhoto" class="gis-drawer-photo" alt="Incident Photo Evidence" />
+            </div>
+
+            <!-- Incident Metadata Details -->
+            <div class="bg-slate-50 border rounded-3 p-3">
+                <div class="mb-2">
+                    <span class="gis-label mb-1">Citizen Reporter</span>
+                    <p class="mb-0 fw-semibold text-dark small" id="drawerCitizen">Ramesh Kumar</p>
+                </div>
+                <div class="mb-2">
+                    <span class="gis-label mb-1">Geographic Coordinates</span>
+                    <p class="mb-0 font-monospace text-muted small" id="drawerCoords">23.25990, 77.41260</p>
+                </div>
                 <div>
-                    <h2 class="fw-bolder text-dark mb-0">City-Wide Geospatial Intelligence Map</h2>
-                    <p class="text-muted mb-0 small">Interactive clustering, density heatmaps, and spatial triage</p>
+                    <span class="gis-label mb-1">Incident Location</span>
+                    <p class="mb-0 text-dark small" id="drawerAddress">Near Model Town Square</p>
                 </div>
             </div>
+        </div>
 
-            <div class="row g-4">
-                <!-- Map Controls & Filters Sidebar -->
-                <div class="col-lg-3">
-                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-layer-group me-2 text-primary"></i>Map Layers</h6>
-                        </div>
-                        <div class="card-body px-4 pb-3 pt-1">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="showMarkers" checked>
-                                <label class="form-check-label small fw-semibold text-dark" for="showMarkers">Individual Markers</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="showClusters" checked>
-                                <label class="form-check-label small fw-semibold text-dark" for="showClusters">Density Clusters</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="showHeatmap">
-                                <label class="form-check-label small fw-semibold text-dark" for="showHeatmap">Heatmap View</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-filter me-2 text-primary"></i>Spatial Filters</h6>
-                        </div>
-                        <div class="card-body px-4 pb-4 pt-1">
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold text-muted mb-1">Status</label>
-                                <select class="form-select form-select-sm rounded-3" id="statusFilter">
-                                    <option value="">All Statuses</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="InProgress">In Progress</option>
-                                    <option value="Fixed">Fixed</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold text-muted mb-1">Department</label>
-                                <select class="form-select form-select-sm rounded-3" id="departmentFilter">
-                                    <option value="">All Departments</option>
-                                    <option value="1">Public Works</option>
-                                    <option value="2">Traffic Management</option>
-                                    <option value="3">Utilities</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold text-muted mb-1">From Date</label>
-                                <input type="date" class="form-control form-control-sm rounded-3" id="fromDate">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold text-muted mb-1">To Date</label>
-                                <input type="date" class="form-control form-control-sm rounded-3" id="toDate">
-                            </div>
-                            <button class="btn btn-primary btn-sm w-100 rounded-3 fw-semibold" onclick="applyFilters()">
-                                <i class="fas fa-sync-alt me-1"></i> Apply Filters
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Map Legend -->
-                    <div class="card border rounded-4 shadow-sm bg-white">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h6 class="fw-bold mb-0 text-dark">Status Legend</h6>
-                        </div>
-                        <div class="card-body px-4 pb-3 pt-1">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #dc3545;"></span>
-                                <span class="small fw-semibold text-dark">Pending Redressal</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #ffc107;"></span>
-                                <span class="small fw-semibold text-dark">Work In Progress</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #198754;"></span>
-                                <span class="small fw-semibold text-dark">Fixed & Resolved</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Main Interactive Map Canvas -->
-                <div class="col-lg-9">
-                    <div class="card border rounded-4 shadow-sm bg-white overflow-hidden p-2">
-                        <div id="map" style="height: 680px; width: 100%; border-radius: 12px;"></div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
+        <div class="gis-drawer-footer d-flex gap-2">
+            <a href="#" id="drawerDetailsLink" class="btn btn-primary w-100 rounded-pill fw-semibold shadow-sm">
+                Open Full Dossier &rarr;
+            </a>
+            <button type="button" id="drawerFocusBtn" class="btn btn-outline-secondary rounded-pill px-3" title="Focus map on this coordinate">
+                <i class="fas fa-crosshairs" aria-hidden="true"></i>
+            </button>
+        </div>
+    </aside>
 </div>
 
-<style>
-.admin-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-}
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-}
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-.top-tab-link {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding-bottom: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-.top-tab-link:hover {
-    color: #0f172a;
-}
-.top-tab-link.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
-    font-weight: 600;
-}
-.custom-marker {
-    background: transparent !important;
-    border: none !important;
-}
-</style>
-
 @section Scripts {
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
-<script>
-    let map;
-    let markersLayer;
-    let clustersLayer;
-    let heatmapLayer;
-    let currentData = [];
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let map = null;
+            let markersLayer = null;
+            let clustersLayer = null;
+            let heatmapLayer = null;
+            let allFeatures = [];
+            let activeSelectedFeature = null;
 
-    $(document).ready(function() {
-        initializeMap();
-        loadMapData();
-        
-        $('#showMarkers').change(function() {
-            if ($(this).is(':checked')) {
-                markersLayer.addTo(map);
-            } else {
-                map.removeLayer(markersLayer);
+            // 1. Initialize Leaflet Map with smooth performance options
+            function initMap() {
+                map = L.map('map', {
+                    zoomControl: false, // Move zoom control to bottom right
+                    updateWhenIdle: true,
+                    keepBuffer: 4,
+                    preferCanvas: true
+                }).setView([23.2599, 77.4126], 12); // Default to Bhopal coords
+
+                // Reposition zoom controls away from floating panel
+                L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map);
+
+                markersLayer = L.layerGroup();
+                clustersLayer = L.markerClusterGroup({
+                    chunkedLoading: true,
+                    maxClusterRadius: 45,
+                    spiderfyOnMaxZoom: true,
+                    showCoverageOnHover: false,
+                    zoomToBoundsOnClick: true
+                });
+
+                // Prevent layout glitching on initial render
+                requestAnimationFrame(function () {
+                    map.invalidateSize();
+                });
+
+                loadMapIncidents();
             }
-        });
-        
-        $('#showClusters').change(function() {
-            if ($(this).is(':checked')) {
-                clustersLayer.addTo(map);
-            } else {
-                map.removeLayer(clustersLayer);
+
+            // 2. Load Incidents from /Map/MapData
+            function loadMapIncidents() {
+                const activeStatus = $('.gis-filter-pill.is-active').data('status') || '';
+                const deptId = $('#gisDepartmentFilter').val() || '';
+                const fromDate = $('#gisFromDate').val() || '';
+                const toDate = $('#gisToDate').val() || '';
+
+                const params = new URLSearchParams();
+                if (activeStatus) params.append('status', activeStatus);
+                if (deptId) params.append('departmentId', deptId);
+                if (fromDate) params.append('from', fromDate);
+                if (toDate) params.append('to', toDate);
+
+                $.get(`/Map/MapData?${params.toString()}`)
+                    .done(function (data) {
+                        if (data && data.features) {
+                            allFeatures = data.features;
+                            renderIncidentMarkers(data.features);
+                        }
+                    })
+                    .fail(function () {
+                        console.error('Failed to load geospatial incident data.');
+                    });
             }
-        });
-        
-        $('#showHeatmap').change(function() {
-            if ($(this).is(':checked')) {
-                createHeatmap();
-            } else {
-                if (heatmapLayer) {
+
+            // 3. Render Custom Markers and Cluster Groups
+            function renderIncidentMarkers(features) {
+                markersLayer.clearLayers();
+                clustersLayer.clearLayers();
+                if (heatmapLayer && map.hasLayer(heatmapLayer)) {
                     map.removeLayer(heatmapLayer);
                 }
+
+                $('#incidentCounterBadge').text(`${features.length} Incidents`);
+
+                const bounds = [];
+                const heatmapCoords = [];
+
+                features.forEach(function (feat) {
+                    const coords = feat.geometry.coordinates; // [lng, lat]
+                    const props = feat.properties;
+                    const lat = coords[1];
+                    const lng = coords[0];
+
+                    if (isNaN(lat) || isNaN(lng)) return;
+
+                    bounds.push([lat, lng]);
+                    heatmapCoords.push([lat, lng, 0.8]);
+
+                    const statusClass = props.status === 'Fixed'
+                        ? 'gis-marker-pin--fixed'
+                        : (props.status === 'InProgress' ? 'gis-marker-pin--inprogress' : 'gis-marker-pin--pending');
+
+                    const iconSymbol = props.status === 'Fixed' ? 'fa-check' : (props.status === 'InProgress' ? 'fa-wrench' : 'fa-exclamation');
+
+                    const customIcon = L.divIcon({
+                        className: 'custom-pin-container',
+                        html: `
+                            <div class="gis-marker-pin ${statusClass}" aria-label="${props.type || 'Incident'}">
+                                <i class="fas ${iconSymbol}"></i>
+                            </div>
+                        `,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+
+                    const marker = L.marker([lat, lng], { icon: customIcon });
+
+                    // Tooltip for instant hover preview
+                    marker.bindTooltip(`
+                        <strong>${props.type || 'Grievance'}</strong> · <span style="text-transform: capitalize;">${props.status}</span>
+                        <div style="font-size: 11px; opacity: 0.8;">Reported by ${props.userName || 'Citizen'}</div>
+                    `, {
+                        className: 'gis-custom-tooltip',
+                        direction: 'top',
+                        offset: [0, -12]
+                    });
+
+                    // Click event slides in the off-canvas inspector drawer
+                    marker.on('click', function () {
+                        openIncidentDrawer(feat, [lat, lng]);
+                    });
+
+                    markersLayer.addLayer(marker);
+                    clustersLayer.addLayer(marker);
+                });
+
+                // Apply Layer Visibility
+                if ($('#layerMarkers').is(':checked') && !$('#layerClusters').is(':checked')) {
+                    markersLayer.addTo(map);
+                }
+                if ($('#layerClusters').is(':checked')) {
+                    clustersLayer.addTo(map);
+                }
+                if ($('#layerHeatmap').is(':checked') && heatmapCoords.length > 0) {
+                    renderHeatmap(heatmapCoords);
+                }
+
+                if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+                }
             }
-        });
-    });
 
-    function initializeMap() {
-        map = L.map('map').setView([23.2599, 77.4126], 12);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+            // 4. Render Spatial Heatmap
+            function renderHeatmap(points) {
+                if (heatmapLayer && map.hasLayer(heatmapLayer)) {
+                    map.removeLayer(heatmapLayer);
+                }
+                heatmapLayer = L.heatLayer(points, {
+                    radius: 28,
+                    blur: 16,
+                    maxZoom: 16
+                });
+                heatmapLayer.addTo(map);
+            }
 
-        markersLayer = L.layerGroup();
-        clustersLayer = L.markerClusterGroup({
-            chunkedLoading: true,
-            maxClusterRadius: 50,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false,
-            zoomToBoundsOnClick: true,
-            removeOutsideVisibleBounds: false
-        });
-    }
+            // 5. Slide-In Off-Canvas Inspection Drawer
+            function openIncidentDrawer(feat, latlng) {
+                activeSelectedFeature = { feat: feat, latlng: latlng };
+                const props = feat.properties;
+                const drawer = document.getElementById('gisIncidentDrawer');
 
-    function loadMapData() {
-        const status = $('#statusFilter').val();
-        const department = $('#departmentFilter').val();
-        const fromDate = $('#fromDate').val();
-        const toDate = $('#toDate').val();
+                $('#drawerCategory').text(props.type || 'Civic Grievance');
+                $('#drawerTitle').text(`Complaint #${props.id}`);
+                $('#drawerTimestamp').text(`Logged: ${props.createdAt ? new Date(props.createdAt).toLocaleString() : 'Recent'}`);
+                $('#drawerCitizen').text(props.userName || 'Anonymous Citizen');
+                $('#drawerCoords').text(`${latlng[0].toFixed(5)}, ${latlng[1].toFixed(5)}`);
+                $('#drawerAddress').text(props.address || 'Address registered on coordinate map');
 
-        const params = new URLSearchParams();
-        if (status) params.append('status', status);
-        if (department) params.append('departmentId', department);
-        if (fromDate) params.append('from', fromDate);
-        if (toDate) params.append('to', toDate);
+                // Status Badge Color
+                const badge = $('#drawerStatusBadge');
+                badge.removeClass('bg-danger bg-warning bg-success text-dark text-white');
+                if (props.status === 'Fixed') {
+                    badge.addClass('bg-success text-white').text('Resolved');
+                } else if (props.status === 'InProgress') {
+                    badge.addClass('bg-warning text-dark').text('In Progress');
+                } else {
+                    badge.addClass('bg-danger text-white').text('Pending Triage');
+                }
 
-        $.get(`/Map/MapData?${params.toString()}`)
-            .done(function(data) {
-                currentData = data.features;
-                displayMarkers(data.features);
+                // Photo Evidence
+                if (props.photoUrl) {
+                    $('#drawerPhoto').attr('src', props.photoUrl);
+                    $('#drawerPhotoWrapper').show();
+                } else {
+                    $('#drawerPhotoWrapper').hide();
+                }
+
+                // Dossier Link
+                $('#drawerDetailsLink').attr('href', `/Admin/Details/${props.id}`);
+
+                // Slide in drawer using hardware-accelerated transform
+                drawer.classList.add('is-active');
+
+                // Smooth pan to point
+                map.panTo(latlng, { animate: true, duration: 0.35 });
+            }
+
+            function closeIncidentDrawer() {
+                const drawer = document.getElementById('gisIncidentDrawer');
+                drawer.classList.remove('is-active');
+                activeSelectedFeature = null;
+            }
+
+            // 6. UI Interactions & Event Wireup
+            $('#drawerCloseBtn').on('click', closeIncidentDrawer);
+
+            $('#drawerFocusBtn').on('click', function () {
+                if (activeSelectedFeature) {
+                    map.setView(activeSelectedFeature.latlng, 17, { animate: true });
+                }
             });
-    }
 
-    function displayMarkers(features) {
-        markersLayer.clearLayers();
-        clustersLayer.clearLayers();
-
-        const bounds = [];
-
-        features.forEach(function(feature) {
-            const coords = feature.geometry.coordinates;
-            const props = feature.properties;
-            
-            const marker = L.marker([coords[1], coords[0]]);
-            marker.complaintId = props.id;
-            
-            const statusColor = props.status === 'Fixed' ? '#198754' : (props.status === 'InProgress' ? '#ffc107' : '#dc3545');
-            const icon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div style="background-color: ${statusColor}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9]
+            // Toggle Floating Panel Collapse
+            $('#togglePanelBtn').on('click', function () {
+                const panel = $('#gisControlPanel');
+                const icon = $('#togglePanelIcon');
+                panel.toggleClass('is-collapsed');
+                if (panel.hasClass('is-collapsed')) {
+                    icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                } else {
+                    icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                }
             });
-            
-            marker.setIcon(icon);
-            
-            const popupContent = `
-                <div class="p-1">
-                    <h6 class="fw-bold mb-1">Complaint #${props.id}</h6>
-                    <p class="small mb-1"><strong>Type:</strong> ${props.type}</p>
-                    <p class="small mb-1"><strong>Status:</strong> <span class="badge" style="background-color: ${statusColor}">${props.status}</span></p>
-                    <p class="small mb-1"><strong>Reported By:</strong> ${props.userName}</p>
-                    <div class="mt-2">
-                        <a href="/Admin/Details/${props.id}" class="btn btn-sm btn-primary rounded-pill px-3">View Details</a>
-                    </div>
-                </div>
-            `;
-            
-            marker.bindPopup(popupContent);
-            markersLayer.addLayer(marker);
-            clustersLayer.addLayer(marker);
-            bounds.push([coords[1], coords[0]]);
+
+            // Status Filter Pills
+            $('.gis-filter-pill').on('click', function () {
+                $('.gis-filter-pill').removeClass('is-active').attr('aria-pressed', 'false');
+                $(this).addClass('is-active').attr('aria-pressed', 'true');
+                loadMapIncidents();
+            });
+
+            // Department & Date Filters
+            $('#gisDepartmentFilter, #gisFromDate, #gisToDate').on('change', function () {
+                loadMapIncidents();
+            });
+
+            // Layer Checkboxes
+            $('#layerMarkers').on('change', function () {
+                if ($(this).is(':checked')) {
+                    markersLayer.addTo(map);
+                } else {
+                    map.removeLayer(markersLayer);
+                }
+            });
+
+            $('#layerClusters').on('change', function () {
+                if ($(this).is(':checked')) {
+                    clustersLayer.addTo(map);
+                } else {
+                    map.removeLayer(clustersLayer);
+                }
+            });
+
+            $('#layerHeatmap').on('change', function () {
+                if ($(this).is(':checked')) {
+                    const points = allFeatures.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0], 0.8]);
+                    renderHeatmap(points);
+                } else {
+                    if (heatmapLayer && map.hasLayer(heatmapLayer)) {
+                        map.removeLayer(heatmapLayer);
+                    }
+                }
+            });
+
+            // Fit All Points
+            $('#btnFitBounds').on('click', function () {
+                if (allFeatures.length > 0) {
+                    const bounds = allFeatures.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+                    map.fitBounds(bounds, { padding: [60, 60] });
+                }
+            });
+
+            // Reset Filters
+            $('#btnResetFilters').on('click', function () {
+                $('.gis-filter-pill').removeClass('is-active').attr('aria-pressed', 'false');
+                $('.gis-filter-pill[data-status=""]').addClass('is-active').attr('aria-pressed', 'true');
+                $('#gisDepartmentFilter').val('');
+                $('#gisFromDate').val('');
+                $('#gisToDate').val('');
+                $('#layerMarkers').prop('checked', true);
+                $('#layerClusters').prop('checked', true);
+                $('#layerHeatmap').prop('checked', false);
+                loadMapIncidents();
+            });
+
+            // Initialize
+            initMap();
         });
-
-        if ($('#showMarkers').is(':checked')) {
-            markersLayer.addTo(map);
-        }
-        if ($('#showClusters').is(':checked')) {
-            clustersLayer.addTo(map);
-        }
-
-        if (bounds.length > 0) {
-            map.fitBounds(bounds, { padding: [40, 40] });
-        }
-    }
-
-    function createHeatmap() {
-        if (heatmapLayer) {
-            map.removeLayer(heatmapLayer);
-        }
-
-        const heatmapData = currentData.map(function(feature) {
-            const coords = feature.geometry.coordinates;
-            return [coords[1], coords[0], 1];
-        });
-
-        heatmapLayer = L.heatLayer(heatmapData, {
-            radius: 25,
-            blur: 15,
-            maxZoom: 17
-        });
-
-        heatmapLayer.addTo(map);
-    }
-
-    function applyFilters() {
-        loadMapData();
-    }
-</script>
+    </script>
 }

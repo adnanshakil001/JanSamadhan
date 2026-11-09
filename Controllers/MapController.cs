@@ -26,7 +26,7 @@ namespace JanSamadhan.Controllers
         [HttpGet]
         public async Task<IActionResult> MapData(string? status, DateTime? from, DateTime? to, int? departmentId)
         {
-            var query = _db.Complaints.Include(c => c.User).Include(c => c.Department).AsQueryable();
+            var query = _db.Complaints.AsNoTracking().Include(c => c.User).Include(c => c.Department).AsQueryable();
 
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<ComplaintStatus>(status, true, out var parsedStatus))
             {
@@ -54,9 +54,9 @@ namespace JanSamadhan.Controllers
                     id = c.ComplaintId,
                     status = c.Status.ToString(),
                     type = c.ProblemType,
-                    userName = c.User!.Name,
+                    userName = c.User != null ? c.User.Name : "Anonymous",
                     createdAt = c.CreatedAt,
-                    badge = c.User.BadgeLevel,
+                    badge = c.User != null ? c.User.BadgeLevel : "Bronze",
                     photoUrl = c.PhotoPath,
                     coordinates = new[] { c.Longitude, c.Latitude }
                 })
@@ -97,6 +97,7 @@ namespace JanSamadhan.Controllers
             var lngRange = radiusMeters / (111000.0 * Math.Cos(lat * Math.PI / 180.0));
 
             var nearbyComplaints = await _db.Complaints
+                .AsNoTracking()
                 .Where(c => c.Latitude >= lat - latRange && c.Latitude <= lat + latRange &&
                            c.Longitude >= lng - lngRange && c.Longitude <= lng + lngRange)
                 .Include(c => c.User)
@@ -110,7 +111,7 @@ namespace JanSamadhan.Controllers
                     PhotoPath = c.PhotoPath,
                     Latitude = c.Latitude,
                     Longitude = c.Longitude,
-                    UserName = c.User!.Name,
+                    UserName = c.User != null ? c.User.Name : "Anonymous",
                     Distance = Math.Sqrt(Math.Pow(c.Latitude - lat, 2) + Math.Pow(c.Longitude - lng, 2)) * 111000
                 })
                 .OrderBy(c => c.Distance)

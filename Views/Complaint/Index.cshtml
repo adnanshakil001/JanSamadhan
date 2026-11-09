@@ -1,264 +1,341 @@
 @model IEnumerable<JanSamadhan.Models.Complaint>
 @{
-    ViewData["Title"] = "Citizen Dashboard - JanSamadhan";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
-    var userRole = ViewBag.UserRole as string ?? "User";
+    ViewData["Title"] = "My Complaints — JanSamadhan";
+    var totalCount = ViewBag.TotalCount ?? Model.Count();
+    var pendingCount = ViewBag.PendingCount ?? Model.Count(c => c.Status == JanSamadhan.Models.ComplaintStatus.Pending);
+    var inProgressCount = ViewBag.InProgressCount ?? Model.Count(c => c.Status == JanSamadhan.Models.ComplaintStatus.InProgress);
+    var fixedCount = ViewBag.FixedCount ?? Model.Count(c => c.Status == JanSamadhan.Models.ComplaintStatus.Fixed);
 }
 
-<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
-        <div>
-            <!-- Brand Logo -->
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
-
-            <!-- Navigation Links -->
-            <nav class="nav flex-column gap-1">
-                <a href="/Complaint" class="sidebar-link active">
-                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
-                </a>
-                <a href="/Complaint/Create" class="sidebar-link">
-                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
-                </a>
-                <a href="/Home/Nearby" class="sidebar-link">
-                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
-                </a>
-                <a href="/Badge" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> Badges & Rewards
-                </a>
-                <a href="/Home/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-trophy me-3"></i> Leaderboard
-                </a>
-            </nav>
-        </div>
-
-        <!-- Sidebar Footer Action -->
-        <div class="pt-3 border-top">
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <!-- Top Header Navigation Bar -->
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-4">
-                <a href="/Complaint" class="top-tab-link active">My Complaints</a>
-                <a href="/Complaint/Create" class="top-tab-link text-success fw-bold">+ Report New Issue</a>
-                <a href="/Home/Nearby" class="top-tab-link">Nearby Map</a>
-                <a href="/Badge" class="top-tab-link">Badges (@ViewBag.BadgeLevel)</a>
-                <a href="/Home/Scoreboard" class="top-tab-link">Leaderboard</a>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center gap-2 px-3 py-1 bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-pill">
-                    <i class="fas fa-star text-warning"></i>
-                    <span class="small fw-bold text-dark">@ViewBag.UserPoints Points</span>
-                </div>
-                <div class="dropdown">
-                    <button class="btn btn-light rounded-pill px-3 py-1 d-flex align-items-center gap-2 border" type="button" data-bs-toggle="dropdown">
-                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                            @(ViewBag.UserName != null && ((string)ViewBag.UserName).Length > 0 ? ((string)ViewBag.UserName).Substring(0, 1).ToUpper() : "U")
-                        </div>
-                        <span class="small fw-semibold text-dark">@ViewBag.UserName</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                        <li><a class="dropdown-item" href="/Account/Profile"><i class="fas fa-user me-2"></i>My Profile</a></li>
-                        <li><a class="dropdown-item" href="/Badge"><i class="fas fa-medal me-2"></i>My Badges</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="/Account/Logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </header>
-
-        <!-- Page Body Content -->
-        <main class="p-4 flex-grow-1">
-            <!-- Header Title -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">Citizen Grievance Portal</h2>
-                    <p class="text-muted mb-0 small">Track your reported civic anomalies, field technician progress, and resolutions.</p>
-                </div>
-                <div>
-                    <a href="/Complaint/Create" class="btn btn-dark fw-semibold rounded-pill px-4 shadow-sm">
-                        <i class="fas fa-plus me-1"></i> Report New Grievance
-                    </a>
-                </div>
-            </div>
-
-            <!-- Top Status Metric Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #dc3545;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Pending Triage</span>
-                                <h3 class="fw-bold mb-0">Pending: @ViewBag.PendingCount</h3>
-                            </div>
-                            <i class="fas fa-clock fa-2x text-white text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 text-dark rounded-4 shadow-sm" style="background-color: #ffc107;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-dark text-opacity-75 fw-semibold d-block">Work In Progress</span>
-                                <h3 class="fw-bold mb-0">In Progress: @ViewBag.InProgressCount</h3>
-                            </div>
-                            <i class="fas fa-tools fa-2x text-dark text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #198754;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Resolved & Closed</span>
-                                <h3 class="fw-bold mb-0">Fixed: @ViewBag.FixedCount</h3>
-                            </div>
-                            <i class="fas fa-check-circle fa-2x text-white text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Complaints Table Card -->
-            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
-                <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0 text-dark">My Reported Grievances</h5>
-                    <span class="text-muted small">Total: @ViewBag.TotalCount records</span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light small text-muted">
-                            <tr>
-                                <th class="ps-4">Created Date</th>
-                                <th>Problem Type</th>
-                                <th>Location Address</th>
-                                <th>Status</th>
-                                <th>Department</th>
-                                <th>Photo Proof</th>
-                                <th class="pe-4 text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!Model.Any())
-                            {
-                                <tr>
-                                    <td colspan="7" class="text-center py-5 text-muted">
-                                        <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
-                                        <h5>No grievances reported yet</h5>
-                                        <p class="small text-muted mb-3">Notice a pothole, broken streetlight, or garbage issue in your area? Report it now!</p>
-                                        <a href="/Complaint/Create" class="btn btn-primary rounded-pill px-4">Report Your First Issue</a>
-                                    </td>
-                                </tr>
-                            }
-                            @foreach (var c in Model)
-                            {
-                                <tr>
-                                    <td class="ps-4 small text-muted">@c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")</td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border px-2 py-1">@c.ProblemType</span>
-                                    </td>
-                                    <td class="small text-truncate" style="max-width: 250px;" title="@c.Address">
-                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>@(c.Address ?? "Location pinned on map")
-                                    </td>
-                                    <td>
-                                        <span class="badge status-badge @(c.Status.ToString().ToLower()) rounded-pill px-3 py-1">
-                                            @c.Status
-                                        </span>
-                                    </td>
-                                    <td class="small">@(c.Department?.Name ?? "Pending Assignment")</td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(c.PhotoPath))
-                                        {
-                                            <a href="@c.PhotoPath" target="_blank" class="btn btn-sm btn-outline-secondary p-1 rounded">
-                                                <i class="fas fa-image"></i> View
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small">—</span>
-                                        }
-                                    </td>
-                                    <td class="pe-4 text-end">
-                                        <a href="@Url.Action("Details", new { id = c.ComplaintId })" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
-                                            View Details & Proofs
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div>
+        <h1 class="dashboard-title">My Reported Grievances</h1>
+        <p class="dashboard-subtitle">Track your civic complaints, municipal triage, and field resolution proofs.</p>
+    </div>
+    <div>
+        <a href="/Complaint/Create" class="dashboard-action-btn">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            <span>Report New Grievance</span>
+        </a>
     </div>
 </div>
 
-<style>
-.citizen-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+<!-- 3 KPI Metric Cards -->
+<div class="metrics-grid">
+    <div class="metric-card metric-card--pending">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Pending Triage</span>
+            <span class="metric-card__count">@pendingCount</span>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-clock"></i>
+        </div>
+    </div>
+
+    <div class="metric-card metric-card--inprogress">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Work In Progress</span>
+            <span class="metric-card__count">@inProgressCount</span>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-screwdriver-wrench"></i>
+        </div>
+    </div>
+
+    <div class="metric-card metric-card--fixed">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Resolved & Closed</span>
+            <span class="metric-card__count">@fixedCount</span>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-circle-check"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Toolbar (Tabs & Search) -->
+<div class="complaints-toolbar">
+    <!-- Segmented Status Tabs -->
+    <div class="filter-tabs" role="tablist" aria-label="Filter Complaints by Status">
+        <button type="button" class="filter-tab active" data-status="all" role="tab" aria-selected="true">
+            <span>All</span>
+            <span class="filter-tab__count">@totalCount</span>
+        </button>
+        <button type="button" class="filter-tab" data-status="pending" role="tab" aria-selected="false">
+            <span>Pending</span>
+            <span class="filter-tab__count">@pendingCount</span>
+        </button>
+        <button type="button" class="filter-tab" data-status="inprogress" role="tab" aria-selected="false">
+            <span>In Progress</span>
+            <span class="filter-tab__count">@inProgressCount</span>
+        </button>
+        <button type="button" class="filter-tab" data-status="fixed" role="tab" aria-selected="false">
+            <span>Resolved</span>
+            <span class="filter-tab__count">@fixedCount</span>
+        </button>
+    </div>
+
+    <!-- Client-Side Search Box -->
+    <div class="search-wrapper">
+        <i class="fas fa-magnifying-glass search-icon" aria-hidden="true"></i>
+        <input type="search" 
+               id="complaintSearch" 
+               class="search-input" 
+               placeholder="Search complaints, category, address..." 
+               aria-label="Search complaints" />
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <!-- Initial Empty State -->
+    <div class="empty-state-card">
+        <div class="empty-state-card__icon" aria-hidden="true">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+        <h2 class="empty-state-card__title">No grievances reported yet</h2>
+        <p class="empty-state-card__text">
+            Spot a pothole, broken streetlight, or garbage overflow in your ward? Report it now for automated municipal routing and photo-verified resolution.
+        </p>
+        <a href="/Complaint/Create" class="dashboard-action-btn">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            <span>File Your First Report (+10 Pts)</span>
+        </a>
+    </div>
+}
+else
+{
+    <!-- Desktop Presentation: Clean Table -->
+    <div class="complaints-table-container">
+        <table class="complaints-table" aria-label="List of complaints">
+            <thead>
+                <tr>
+                    <th scope="col">Case ID</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Location Address</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">Proof Photo</th>
+                    <th scope="col" class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody id="complaintsTableBody">
+                @foreach (var c in Model)
+                {
+                    var statusKey = c.Status.ToString().ToLower();
+                    var statusClass = statusKey switch
+                    {
+                        "pending" => "status-pill--pending",
+                        "inprogress" => "status-pill--inprogress",
+                        "fixed" => "status-pill--fixed",
+                        _ => "status-pill--pending"
+                    };
+
+                    <tr class="complaint-row" 
+                        data-status="@statusKey" 
+                        data-search="@($"{c.ComplaintId} {c.ProblemType} {c.Address} {c.Department?.Name}".ToLower())">
+                        <td>
+                            <strong class="text-dark">#JS-@c.ComplaintId</strong>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                @c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                            </div>
+                        </td>
+                        <td>
+                            <span class="category-pill">
+                                @c.ProblemType
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1 text-truncate" style="max-width: 260px;" title="@c.Address">
+                                <i class="fas fa-map-pin text-primary me-1" aria-hidden="true"></i>
+                                <span>@(string.IsNullOrWhiteSpace(c.Address) ? "Location pinned on GIS map" : c.Address)</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-pill @statusClass">
+                                @(c.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "In Progress" : c.Status.ToString())
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-muted small">
+                                @(c.Department?.Name ?? "Pending Routing")
+                            </span>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(c.PhotoPath))
+                            {
+                                <a href="@c.PhotoPath" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light border p-1 rounded d-inline-flex align-items-center gap-1" title="View uploaded evidence">
+                                    <i class="fas fa-image text-primary" aria-hidden="true"></i>
+                                    <span class="small">View</span>
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a href="@Url.Action("Details", new { id = c.ComplaintId })" class="table-action-btn">
+                                <span>Track Case</span>
+                                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile Presentation: Responsive Cards -->
+    <div class="complaints-cards-container" id="complaintsCardsContainer">
+        @foreach (var c in Model)
+        {
+            var statusKey = c.Status.ToString().ToLower();
+            var statusClass = statusKey switch
+            {
+                "pending" => "status-pill--pending",
+                "inprogress" => "status-pill--inprogress",
+                "fixed" => "status-pill--fixed",
+                _ => "status-pill--pending"
+            };
+
+            <article class="mobile-complaint-card complaint-card" 
+                     data-status="@statusKey" 
+                     data-search="@($"{c.ComplaintId} {c.ProblemType} {c.Address} {c.Department?.Name}".ToLower())">
+                <div class="mobile-card__head">
+                    <span class="category-pill">
+                        <strong>#JS-@c.ComplaintId</strong> &middot; @c.ProblemType
+                    </span>
+                    <span class="status-pill @statusClass">
+                        @(c.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "In Progress" : c.Status.ToString())
+                    </span>
+                </div>
+
+                <div class="mobile-card__address">
+                    <i class="fas fa-location-dot" aria-hidden="true"></i>
+                    <span>@(string.IsNullOrWhiteSpace(c.Address) ? "Location pinned on GIS map" : c.Address)</span>
+                </div>
+
+                <div class="mobile-card__meta">
+                    <span><i class="fas fa-building me-1" aria-hidden="true"></i>@(c.Department?.Name ?? "Pending Routing")</span>
+                    <span><i class="fas fa-calendar-day me-1" aria-hidden="true"></i>@c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                </div>
+
+                <a href="@Url.Action("Details", new { id = c.ComplaintId })" class="mobile-card__action-btn">
+                    <span>View Timeline & Proofs</span>
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
+            </article>
+        }
+    </div>
+
+    <!-- No Search Results Found Alert -->
+    <div class="empty-state-card" id="noFilterResultsCard" style="display: none;">
+        <div class="empty-state-card__icon" aria-hidden="true">
+            <i class="fas fa-filter"></i>
+        </div>
+        <h2 class="empty-state-card__title">No matching complaints found</h2>
+        <p class="empty-state-card__text">Try adjusting your search query or switching to another status tab.</p>
+        <button type="button" class="dashboard-action-btn" id="btnResetFilters">Reset Filters</button>
+    </div>
 }
 
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
+@section Styles {
+    <link rel="stylesheet" href="~/css/complaints.css" asp-append-version="true" />
 }
 
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabs = document.querySelectorAll('.filter-tab');
+        const searchInput = document.getElementById('complaintSearch');
+        const rows = document.querySelectorAll('.complaint-row');
+        const cards = document.querySelectorAll('.complaint-card');
+        const noResults = document.getElementById('noFilterResultsCard');
+        const resetBtn = document.getElementById('btnResetFilters');
 
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
+        let currentStatus = 'all';
+        let currentQuery = '';
 
-.top-tab-link {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding-bottom: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
+        function filterItems() {
+            let visibleCount = 0;
 
-.top-tab-link:hover {
-    color: #0f172a;
-}
+            // Filter Desktop Table Rows
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                const searchData = row.getAttribute('data-search') || '';
+                const matchesStatus = (currentStatus === 'all' || status === currentStatus);
+                const matchesQuery = (!currentQuery || searchData.includes(currentQuery));
 
-.top-tab-link.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
-    font-weight: 600;
-}
+                if (matchesStatus && matchesQuery) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
 
-.status-badge.pending { background-color: #dc3545 !important; color: #fff; }
-.status-badge.inprogress { background-color: #ffc107 !important; color: #000; }
-.status-badge.fixed { background-color: #198754 !important; color: #fff; }
-</style>
+            // Filter Mobile Cards
+            cards.forEach(card => {
+                const status = card.getAttribute('data-status');
+                const searchData = card.getAttribute('data-search') || '';
+                const matchesStatus = (currentStatus === 'all' || status === currentStatus);
+                const matchesQuery = (!currentQuery || searchData.includes(currentQuery));
+
+                if (matchesStatus && matchesQuery) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show or Hide No Results State
+            if (noResults) {
+                noResults.style.display = (visibleCount === 0 && (rows.length > 0)) ? 'block' : 'none';
+            }
+        }
+
+        // Tab Clicking
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
+                currentStatus = this.getAttribute('data-status');
+                filterItems();
+            });
+        });
+
+        // Search Input
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                currentQuery = this.value.trim().toLowerCase();
+                filterItems();
+            });
+        }
+
+        // Reset Filters Button
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                currentStatus = 'all';
+                currentQuery = '';
+                if (searchInput) searchInput.value = '';
+                tabs.forEach(t => {
+                    if (t.getAttribute('data-status') === 'all') {
+                        t.classList.add('active');
+                        t.setAttribute('aria-selected', 'true');
+                    } else {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    }
+                });
+                filterItems();
+            });
+        }
+    });
+</script>
+}

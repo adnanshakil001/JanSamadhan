@@ -40,13 +40,13 @@ namespace JanSamadhan.Controllers
             }
 
             // Apply sorting
-            query = sortBy.ToLower() switch
+            query = (sortBy ?? "Name").ToLower() switch
             {
                 "name" => sortOrder == "asc" ? query.OrderBy(u => u.Name) : query.OrderByDescending(u => u.Name),
                 "email" => sortOrder == "asc" ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
                 "role" => sortOrder == "asc" ? query.OrderBy(u => u.Role) : query.OrderByDescending(u => u.Role),
                 "points" => sortOrder == "asc" ? query.OrderBy(u => u.Points) : query.OrderByDescending(u => u.Points),
-                "department" => sortOrder == "asc" ? query.OrderBy(u => u.Department!.Name) : query.OrderByDescending(u => u.Department!.Name),
+                "department" => sortOrder == "asc" ? query.OrderBy(u => u.Department != null ? u.Department.Name : "") : query.OrderByDescending(u => u.Department != null ? u.Department.Name : ""),
                 _ => query.OrderBy(u => u.Name)
             };
 
@@ -205,7 +205,7 @@ namespace JanSamadhan.Controllers
                 RegularUserCount = await _db.Users.CountAsync(u => u.Role == "User"),
                 UsersByDepartment = await _db.Users
                     .Where(u => u.DepartmentId.HasValue)
-                    .GroupBy(u => u.Department!.Name)
+                    .GroupBy(u => u.Department != null ? u.Department.Name : "Unassigned")
                     .Select(g => new { Department = g.Key, Count = g.Count() })
                     .ToListAsync()
             };

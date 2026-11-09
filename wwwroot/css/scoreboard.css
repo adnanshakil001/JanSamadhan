@@ -1,0 +1,407 @@
+/* ==========================================================================
+   JanSamadhan — Gamification Scoreboard & Olympic Podium Styles
+   Crafted following Emil Kowalski's Design Engineering philosophy
+   Consumes design tokens from tokens.css
+   ========================================================================== */
+
+/* Header & Tab Switcher */
+.scoreboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .scoreboard-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.scoreboard-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-900);
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: var(--space-1);
+}
+
+.scoreboard-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ==========================================================================
+   Olympic Podium Visual Component (Top 3)
+   ========================================================================== */
+
+.podium-wrapper {
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--slate-50) 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-4) var(--space-2) var(--space-4);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.podium-heading {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.podium-heading__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--slate-900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+}
+
+.podium-heading__subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  font-weight: var(--weight-semibold);
+}
+
+/* Podium Columns Grid */
+.podium-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .podium-grid {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: var(--space-3);
+  }
+}
+
+/* Individual Podium Pillar Item */
+.podium-column {
+  width: 100%;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  /* Desktop Olympic ordering: 2nd (left), 1st (center), 3rd (right) */
+  .podium-column--2 { order: 1; }
+  .podium-column--1 { order: 2; z-index: 2; }
+  .podium-column--3 { order: 3; }
+}
+
+/* Participant Profile Avatar & Badges */
+.podium-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--space-3);
+  width: 100%;
+}
+
+.podium-avatar-wrap {
+  position: relative;
+  margin-bottom: var(--space-2);
+}
+
+.podium-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: var(--weight-extrabold);
+  box-shadow: var(--shadow-md);
+  border: 3px solid #ffffff;
+  flex-shrink: 0;
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.podium-column--1 .podium-avatar {
+  width: 76px;
+  height: 76px;
+  font-size: 1.6rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.podium-column--2 .podium-avatar {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #334155;
+  border-color: #94a3b8;
+}
+
+.podium-column--3 .podium-avatar {
+  background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+  color: #9a3412;
+  border-color: #f97316;
+}
+
+.podium-column:hover .podium-avatar {
+  transform: translateY(-4px) scale(1.04);
+}
+
+/* Crown / Trophy Floating Pill */
+.podium-crown {
+  position: absolute;
+  top: -12px;
+  right: -6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid #ffffff;
+}
+
+.podium-column--1 .podium-crown {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.podium-column--2 .podium-crown {
+  background: #94a3b8;
+  color: #ffffff;
+}
+
+.podium-column--3 .podium-crown {
+  background: #ea580c;
+  color: #ffffff;
+}
+
+.podium-name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--slate-900);
+  margin-bottom: 2px;
+  overflow-wrap: anywhere;
+  max-width: 200px;
+}
+
+.podium-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.podium-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-extrabold);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-xs);
+}
+
+.podium-column--1 .podium-score {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.podium-column--2 .podium-score {
+  background: var(--slate-100);
+  color: var(--slate-700);
+  border: 1px solid var(--slate-200);
+}
+
+.podium-column--3 .podium-score {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #ffedd5;
+}
+
+/* 3D Pedestal Platform Base */
+.podium-pedestal {
+  width: 100%;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: var(--space-3);
+  position: relative;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+}
+
+.podium-column--1 .podium-pedestal {
+  height: 180px;
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #fcd34d;
+}
+
+.podium-column--2 .podium-pedestal {
+  height: 135px;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+}
+
+.podium-column--3 .podium-pedestal {
+  height: 105px;
+  background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%);
+  border-color: #fdba74;
+}
+
+@media (max-width: 639.98px) {
+  .podium-pedestal {
+    height: 48px !important;
+    border-radius: var(--radius-md);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-3);
+  }
+}
+
+.podium-rank-num {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extrabold);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  opacity: 0.85;
+}
+
+.podium-column--1 .podium-rank-num { color: #b45309; }
+.podium-column--2 .podium-rank-num { color: #64748b; }
+.podium-column--3 .podium-rank-num { color: #c2410c; }
+
+/* ==========================================================================
+   Ranking Table Card (Ranks 4+)
+   ========================================================================== */
+
+.scoreboard-table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+}
+
+.scoreboard-table-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--slate-50);
+}
+
+.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.scoreboard-table th {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.scoreboard-table td {
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--slate-900);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.scoreboard-table tbody tr {
+  transition: background-color 100ms ease;
+}
+
+.scoreboard-table tbody tr:hover {
+  background-color: var(--slate-50);
+}
+
+.scoreboard-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Rank Number Badge */
+.table-rank-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--slate-100);
+  color: var(--slate-700);
+  font-size: 0.8rem;
+  font-weight: var(--weight-bold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive Table User Cell */
+.table-user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.table-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.table-user-info {
+  min-width: 0;
+}
+
+.table-user-name {
+  font-weight: var(--weight-semibold);
+  color: var(--slate-900);
+  overflow-wrap: anywhere;
+}
+
+.table-user-sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+

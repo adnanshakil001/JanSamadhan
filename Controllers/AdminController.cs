@@ -54,17 +54,17 @@ namespace JanSamadhan.Controllers
                 query = query.Where(c => c.ProblemType.Contains(q) || 
                                        (c.Description != null && c.Description.Contains(q)) ||
                                        (c.Address != null && c.Address.Contains(q)) ||
-                                       c.User!.Name.Contains(q));
+                                       (c.User != null && c.User.Name.Contains(q)));
             }
 
             // Apply sorting
-            query = sortBy.ToLower() switch
+            query = (sortBy ?? "CreatedAt").ToLower() switch
             {
                 "createdat" => sortOrder == "asc" ? query.OrderBy(c => c.CreatedAt) : query.OrderByDescending(c => c.CreatedAt),
                 "status" => sortOrder == "asc" ? query.OrderBy(c => c.Status) : query.OrderByDescending(c => c.Status),
                 "problemtype" => sortOrder == "asc" ? query.OrderBy(c => c.ProblemType) : query.OrderByDescending(c => c.ProblemType),
-                "username" => sortOrder == "asc" ? query.OrderBy(c => c.User!.Name) : query.OrderByDescending(c => c.User!.Name),
-                "department" => sortOrder == "asc" ? query.OrderBy(c => c.Department!.Name) : query.OrderByDescending(c => c.Department!.Name),
+                "username" => sortOrder == "asc" ? query.OrderBy(c => c.User != null ? c.User.Name : "") : query.OrderByDescending(c => c.User != null ? c.User.Name : ""),
+                "department" => sortOrder == "asc" ? query.OrderBy(c => c.Department != null ? c.Department.Name : "") : query.OrderByDescending(c => c.Department != null ? c.Department.Name : ""),
                 _ => query.OrderByDescending(c => c.CreatedAt)
             };
 
@@ -121,7 +121,9 @@ namespace JanSamadhan.Controllers
                 d.Name,
                 Total = d.AssignedComplaints.Count,
                 Fixed = d.AssignedComplaints.Count(c => c.Status == ComplaintStatus.Fixed),
-                Rate = d.AssignedComplaints.Count > 0 ? Math.Max(20, (int)((double)d.AssignedComplaints.Count(c => c.Status == ComplaintStatus.Fixed) / d.AssignedComplaints.Count * 100)) : 85
+                Rate = d.AssignedComplaints.Count > 0 
+                    ? (int)Math.Round((double)d.AssignedComplaints.Count(c => c.Status == ComplaintStatus.Fixed) / d.AssignedComplaints.Count * 100) 
+                    : 100
             }).ToList();
 
             return View(complaints);
@@ -346,17 +348,17 @@ namespace JanSamadhan.Controllers
                 query = query.Where(c => c.ProblemType.Contains(q) || 
                                        (c.Description != null && c.Description.Contains(q)) ||
                                        (c.Address != null && c.Address.Contains(q)) ||
-                                       c.User!.Name.Contains(q));
+                                       (c.User != null && c.User.Name.Contains(q)));
             }
 
             // Apply sorting
-            query = sortBy.ToLower() switch
+            query = (sortBy ?? "CreatedAt").ToLower() switch
             {
                 "createdat" => sortOrder == "asc" ? query.OrderBy(c => c.CreatedAt) : query.OrderByDescending(c => c.CreatedAt),
                 "status" => sortOrder == "asc" ? query.OrderBy(c => c.Status) : query.OrderByDescending(c => c.Status),
                 "problemtype" => sortOrder == "asc" ? query.OrderBy(c => c.ProblemType) : query.OrderByDescending(c => c.ProblemType),
-                "username" => sortOrder == "asc" ? query.OrderBy(c => c.User!.Name) : query.OrderByDescending(c => c.User!.Name),
-                "department" => sortOrder == "asc" ? query.OrderBy(c => c.Department!.Name) : query.OrderByDescending(c => c.Department!.Name),
+                "username" => sortOrder == "asc" ? query.OrderBy(c => c.User != null ? c.User.Name : "") : query.OrderByDescending(c => c.User != null ? c.User.Name : ""),
+                "department" => sortOrder == "asc" ? query.OrderBy(c => c.Department != null ? c.Department.Name : "") : query.OrderByDescending(c => c.Department != null ? c.Department.Name : ""),
                 _ => query.OrderByDescending(c => c.CreatedAt)
             };
 

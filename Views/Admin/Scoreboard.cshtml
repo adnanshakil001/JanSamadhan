@@ -1,171 +1,225 @@
 @model IEnumerable<dynamic>
 @{
-    ViewData["Title"] = "Citizen Scoreboard - Admin";
-    ViewData["HideDefaultNav"] = true;
+    ViewData["Title"] = "Citizen Gamification Scoreboard - JanSamadhan";
     ViewData["FullWidth"] = true;
+
+    var usersList = Model?.ToList() ?? new List<dynamic>();
+    var top3 = usersList.Take(3).ToList();
+    var remaining = usersList.Skip(3).ToList();
 }
 
-<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+@section Styles {
+    <link rel="stylesheet" href="~/css/scoreboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Header Row -->
+    <div class="scoreboard-header">
         <div>
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
-
-            <nav class="nav flex-column gap-1">
-                <a href="/Admin" class="sidebar-link">
-                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
-                </a>
-                <a href="/Map/AdminMap" class="sidebar-link">
-                    <i class="fas fa-map-marked-alt me-3"></i> Map View
-                </a>
-                <a href="/Role" class="sidebar-link">
-                    <i class="fas fa-users-cog me-3"></i> Role Management
-                </a>
-                <a href="/Admin/TechnicianScoreboard" class="sidebar-link">
-                    <i class="fas fa-chart-line me-3"></i> Technician Board
-                </a>
-                <a href="/Admin/Scoreboard" class="sidebar-link active">
-                    <i class="fas fa-medal me-3"></i> User Scoreboard
-                </a>
+            <nav class="scoreboard-subtitle mb-2" aria-label="Breadcrumb">
+                <a href="/Admin" class="text-primary text-decoration-none">Admin</a>
+                <span class="text-muted mx-1" aria-hidden="true">&sol;</span>
+                <span class="text-slate-900 fw-semibold">Citizen Leaderboard</span>
             </nav>
+            <h1 class="scoreboard-title">Citizen Gamification Scoreboard</h1>
+            <p class="scoreboard-subtitle">Civic engagement points, report resolution milestones, and top citizen contributions</p>
         </div>
-
-        <div class="pt-3 border-top">
-            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
-                <i class="fas fa-user-plus"></i> + Add Technician
+        <div class="d-flex align-items-center gap-2">
+            <a href="/Admin/TechnicianScoreboard" class="btn btn-outline-primary rounded-pill px-3 fw-medium d-inline-flex align-items-center gap-2">
+                <i class="fas fa-screwdriver-wrench" aria-hidden="true"></i>
+                <span>Technician Board &rarr;</span>
             </a>
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-cog"></i> Settings
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
+            <a href="/Admin" class="btn btn-outline-secondary rounded-pill px-3 fw-medium d-inline-flex align-items-center gap-1">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                <span>Dashboard</span>
+            </a>
         </div>
-    </aside>
+    </div>
 
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-4">
-                <a href="/Admin" class="top-tab-link">Admin Dashboard</a>
-                <a href="/Admin/Scoreboard" class="top-tab-link active">User Scoreboard</a>
-                <a href="/Admin/TechnicianScoreboard" class="top-tab-link">Technician Scoreboard</a>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
-
-        <main class="p-4 flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">Citizen Gamification Scoreboard</h2>
-                    <p class="text-muted mb-0 small">Civic points, reporting badges, and top citizen redressed contributions</p>
-                </div>
-                <div>
-                    <a href="/Admin/TechnicianScoreboard" class="btn btn-outline-primary rounded-pill px-3">Switch to Technician Board →</a>
-                </div>
+    <!-- 1. Top 3 Olympic Podium Visual Component -->
+    @if (top3.Any())
+    {
+        <section class="podium-wrapper" aria-label="Top 3 Citizens Podium">
+            <div class="podium-heading">
+                <h2 class="podium-heading__title">
+                    <i class="fas fa-trophy text-warning" aria-hidden="true"></i>
+                    <span>Civic Champions Podium</span>
+                </h2>
+                <span class="podium-heading__subtitle">Top 3 Active Redressal Contributors</span>
             </div>
 
-            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light small text-muted">
-                            <tr>
-                                <th class="ps-4" style="width: 80px;">Rank</th>
-                                <th>Citizen Name</th>
-                                <th>Email</th>
-                                <th>Civic Points</th>
-                                <th class="pe-4 text-end">Badge Tier</th>
+            <div class="podium-grid">
+                <!-- 2nd Place (Silver) -->
+                @if (top3.Count > 1)
+                {
+                    var second = top3[1];
+                    string sName = second.Name ?? "Citizen";
+                    string sInitial = string.IsNullOrWhiteSpace(sName) ? "C" : sName.Substring(0, 1).ToUpperInvariant();
+
+                    <div class="podium-column podium-column--2">
+                        <div class="podium-profile">
+                            <div class="podium-avatar-wrap">
+                                <div class="podium-avatar" aria-hidden="true">@sInitial</div>
+                                <span class="podium-crown" title="2nd Place Silver">
+                                    <i class="fas fa-medal"></i>
+                                </span>
+                            </div>
+                            <div class="podium-name" title="@sName">@sName</div>
+                            <div class="podium-meta">@(second.BadgeLevel ?? "Silver") Tier</div>
+                            <div class="podium-score">
+                                <i class="fas fa-star text-secondary" aria-hidden="true"></i>
+                                <span>@second.Points.ToString("N0") pts</span>
+                            </div>
+                        </div>
+                        <div class="podium-pedestal">
+                            <span class="podium-rank-num">2</span>
+                        </div>
+                    </div>
+                }
+
+                <!-- 1st Place (Gold - Center) -->
+                @if (top3.Count > 0)
+                {
+                    var first = top3[0];
+                    string fName = first.Name ?? "Citizen";
+                    string fInitial = string.IsNullOrWhiteSpace(fName) ? "C" : fName.Substring(0, 1).ToUpperInvariant();
+
+                    <div class="podium-column podium-column--1">
+                        <div class="podium-profile">
+                            <div class="podium-avatar-wrap">
+                                <div class="podium-avatar" aria-hidden="true">@fInitial</div>
+                                <span class="podium-crown" title="1st Place Gold Champion">
+                                    <i class="fas fa-crown"></i>
+                                </span>
+                            </div>
+                            <div class="podium-name" title="@fName">@fName</div>
+                            <div class="podium-meta">@(first.BadgeLevel ?? "Gold") Tier</div>
+                            <div class="podium-score">
+                                <i class="fas fa-award text-warning" aria-hidden="true"></i>
+                                <span>@first.Points.ToString("N0") pts</span>
+                            </div>
+                        </div>
+                        <div class="podium-pedestal">
+                            <span class="podium-rank-num">1</span>
+                        </div>
+                    </div>
+                }
+
+                <!-- 3rd Place (Bronze) -->
+                @if (top3.Count > 2)
+                {
+                    var third = top3[2];
+                    string tName = third.Name ?? "Citizen";
+                    string tInitial = string.IsNullOrWhiteSpace(tName) ? "C" : tName.Substring(0, 1).ToUpperInvariant();
+
+                    <div class="podium-column podium-column--3">
+                        <div class="podium-profile">
+                            <div class="podium-avatar-wrap">
+                                <div class="podium-avatar" aria-hidden="true">@tInitial</div>
+                                <span class="podium-crown" title="3rd Place Bronze">
+                                    <i class="fas fa-award"></i>
+                                </span>
+                            </div>
+                            <div class="podium-name" title="@tName">@tName</div>
+                            <div class="podium-meta">@(third.BadgeLevel ?? "Bronze") Tier</div>
+                            <div class="podium-score">
+                                <i class="fas fa-shield-halved text-danger" aria-hidden="true"></i>
+                                <span>@third.Points.ToString("N0") pts</span>
+                            </div>
+                        </div>
+                        <div class="podium-pedestal">
+                            <span class="podium-rank-num">3</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- 2. Remaining Participants Ranking Table Card -->
+    <div class="scoreboard-table-card">
+        <div class="scoreboard-table-header">
+            <div>
+                <h2 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="fas fa-list-ol text-primary" aria-hidden="true"></i>
+                    <span>Citizen Honor Roll</span>
+                </h2>
+                <span class="text-muted small">All ranked civic contributors across municipal zones</span>
+            </div>
+            <span class="badge bg-light text-muted border text-xs">@usersList.Count total registered</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="scoreboard-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;" class="ps-4">Rank</th>
+                        <th scope="col">Citizen</th>
+                        <th scope="col">Email Contact</th>
+                        <th scope="col">Badge Milestone</th>
+                        <th scope="col" class="text-end pe-4">Civic Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!usersList.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="fas fa-trophy fa-3x mb-3 text-muted opacity-50" aria-hidden="true"></i>
+                                <p class="mb-0 fw-semibold">No citizen scores recorded yet.</p>
+                                <small class="text-muted">Citizens earn points by reporting verified local civic issues.</small>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int currentRank = 1;
+                        foreach (var user in usersList)
+                        {
+                            string uName = user.Name ?? "Citizen";
+                            string uEmail = user.Email ?? "—";
+                            string uInitial = string.IsNullOrWhiteSpace(uName) ? "C" : uName.Substring(0, 1).ToUpperInvariant();
+                            string badgeTier = user.BadgeLevel ?? "Bronze";
+
+                            var isTop3 = currentRank <= 3;
+                            var rankBadgeClass = currentRank == 1 ? "bg-warning text-dark" : (currentRank == 2 ? "bg-secondary text-white" : (currentRank == 3 ? "bg-dark text-white" : ""));
+
+                            <tr class="@(isTop3 ? "bg-light bg-opacity-50" : "")">
+                                <td class="ps-4">
+                                    @if (isTop3)
+                                    {
+                                        <span class="badge @rankBadgeClass rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px; font-weight: 700;">
+                                            #@currentRank
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="table-rank-badge">#@currentRank</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="table-user-cell">
+                                        <div class="table-user-avatar" aria-hidden="true">@uInitial</div>
+                                        <div class="table-user-info">
+                                            <div class="table-user-name">@uName</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">@uEmail</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-1">
+                                        <i class="fas fa-award text-warning me-1" aria-hidden="true"></i>@badgeTier
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4 fw-bold text-primary">
+                                    @user.Points.ToString("N0") pts
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @{ var rank = 1; }
-                            @if (!Model.Any())
-                            {
-                                <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">
-                                        <i class="fas fa-medal fa-3x mb-2 opacity-50"></i>
-                                        <p class="mb-0">No citizen score records available yet.</p>
-                                    </td>
-                                </tr>
-                            }
-                            @foreach (var u in Model)
-                            {
-                                var badgeColor = rank == 1 ? "bg-warning text-dark" : (rank == 2 ? "bg-secondary text-white" : (rank == 3 ? "bg-dark text-white" : "bg-light text-dark border"));
-                                <tr>
-                                    <td class="ps-4">
-                                        <span class="badge @badgeColor rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700;">
-                                            #@rank
-                                        </span>
-                                    </td>
-                                    <td class="fw-bold text-dark">@u.Name</td>
-                                    <td class="text-muted small">@u.Email</td>
-                                    <td>
-                                        <span class="fw-bold text-primary fs-6">@u.Points pts</span>
-                                    </td>
-                                    <td class="pe-4 text-end">
-                                        <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill px-3 py-1 fw-semibold">
-                                            <i class="fas fa-award me-1 text-warning"></i>@(u.BadgeLevel ?? "Bronze")
-                                        </span>
-                                    </td>
-                                </tr>
-                                rank++;
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+                            currentRank++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
-
-<style>
-.admin-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-}
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-}
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-.top-tab-link {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding-bottom: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-.top-tab-link:hover {
-    color: #0f172a;
-}
-.top-tab-link.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
-    font-weight: 600;
-}
-</style>

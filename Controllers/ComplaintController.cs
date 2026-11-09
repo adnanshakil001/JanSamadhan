@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JanSamadhan.Controllers
 {
-    [Authorize(Roles = "User")]
+    [Authorize]
     public class ComplaintController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -69,17 +69,25 @@ namespace JanSamadhan.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "User")]
         public IActionResult Create()
         {
             return View();
         }
 
         [HttpPost]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> Create(string problemType, string? description, double latitude, double longitude, string? address, IFormFile? photo)
         {
             if (string.IsNullOrWhiteSpace(problemType))
             {
                 ModelState.AddModelError(string.Empty, "Problem type is required.");
+                return View();
+            }
+
+            if (double.IsNaN(latitude) || double.IsNaN(longitude) || latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0)
+            {
+                ModelState.AddModelError(string.Empty, "Please select a valid geographic location on the map.");
                 return View();
             }
 
@@ -227,6 +235,7 @@ namespace JanSamadhan.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> Rate(int complaintId, int score, string? comment)
         {
             if (score < 1 || score > 5)

@@ -1,377 +1,573 @@
 @model JanSamadhan.Models.Complaint
 @{
-    ViewData["Title"] = "Complaint #" + Model.ComplaintId + " - JanSamadhan";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
-    var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    var isAdmin = User.IsInRole("Admin") || User.IsInRole("Technician") || User.IsInRole("DepartmentManager");
-    var canComment = Model.UserId == currentUserId || isAdmin;
+    ViewData["Title"] = $"Case #JS-{Model.ComplaintId} — JanSamadhan";
+    var currentUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    int.TryParse(currentUserIdClaim, out int currentUserId);
+    var isAdminOrStaff = User.IsInRole("Admin") || User.IsInRole("Technician") || User.IsInRole("DepartmentManager");
     var isMyComplaint = Model.UserId == currentUserId;
+    var canComment = isMyComplaint || isAdminOrStaff;
+
+    // Lifecycle Step States
+    var isFixed = Model.Status == JanSamadhan.Models.ComplaintStatus.Fixed;
+    var isInProgress = Model.Status == JanSamadhan.Models.ComplaintStatus.InProgress;
+    var hasDept = Model.Department != null || Model.DepartmentId != null;
+
+    var step2Complete = hasDept || isInProgress || isFixed;
+    var step2Active = !hasDept && !isInProgress && !isFixed;
+    var step3Complete = isFixed;
+    var step3Active = isInProgress;
+    var step4Complete = isFixed;
+
+    var statusKey = Model.Status.ToString().ToLower();
+    var statusClass = statusKey switch
+    {
+        "pending" => "status-pill--pending",
+        "inprogress" => "status-pill--inprogress",
+        "fixed" => "status-pill--fixed",
+        _ => "status-pill--pending"
+    };
 }
 
-<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
-        <div>
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
-
-            <nav class="nav flex-column gap-1">
-                <a href="/Complaint" class="sidebar-link active">
-                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
-                </a>
-                <a href="/Complaint/Create" class="sidebar-link">
-                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
-                </a>
-                <a href="/Home/Nearby" class="sidebar-link">
-                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
-                </a>
-                <a href="/Badge" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> Badges & Rewards
-                </a>
-                <a href="/Home/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-trophy me-3"></i> Leaderboard
-                </a>
-            </nav>
+<!-- Page Header & Breadcrumbs -->
+<div class="details-page-header">
+    <div>
+        <nav class="details-breadcrumbs" aria-label="Breadcrumb">
+            <a href="/Complaint"><i class="fas fa-clipboard-list me-1" aria-hidden="true"></i>My Complaints</a>
+            <span aria-hidden="true">/</span>
+            <span class="text-dark fw-semibold" aria-current="page">Case #JS-@Model.ComplaintId</span>
+        </nav>
+        <div class="details-title-row">
+            <h1 class="details-title">Case #JS-@Model.ComplaintId</h1>
+            <span class="status-pill @statusClass fs-6">
+                @(Model.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "In Progress" : Model.Status.ToString())
+            </span>
         </div>
-
-        <div class="pt-3 border-top">
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Complaint" class="btn btn-outline-secondary btn-sm rounded-pill px-3"><i class="fas fa-arrow-left me-1"></i> Back to Complaints</a>
-                <span class="text-muted">/</span>
-                <span class="fw-semibold text-dark">Complaint #@Model.ComplaintId</span>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
-
-        <main class="p-4 flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">Complaint #@Model.ComplaintId</h2>
-                    <p class="text-muted mb-0 small">Live resolution progress, technician photo proofs, and rating</p>
-                </div>
-                <div>
-                    <span class="badge status-badge @(Model.Status.ToString().ToLower()) rounded-pill px-3 py-2 fs-6">
-                        @Model.Status
-                    </span>
-                </div>
-            </div>
-
-            <div class="row g-4">
-                <!-- Left 8 Columns -->
-                <div class="col-lg-8">
-                    <!-- Issue Overview Card -->
-                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h5 class="fw-bold mb-0 text-dark">Grievance Overview</h5>
-                        </div>
-                        <div class="card-body px-4 pb-4 pt-2">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="text-muted small fw-semibold">Problem Type</label>
-                                    <p class="fw-bold text-dark mb-2"><span class="badge bg-light text-dark border">@Model.ProblemType</span></p>
-                                    
-                                    <label class="text-muted small fw-semibold">Description</label>
-                                    <p class="text-dark mb-2">@(Model.Description ?? "No additional description provided")</p>
-                                    
-                                    <label class="text-muted small fw-semibold">Location / Address</label>
-                                    <p class="text-dark mb-1">@(Model.Address ?? "Location pinned on map")</p>
-                                    <small class="text-muted font-monospace"><i class="fas fa-map-pin me-1 text-danger"></i>@Model.Latitude, @Model.Longitude</small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small fw-semibold">Reported By</label>
-                                    <p class="fw-bold text-dark mb-2">@Model.User?.Name</p>
-                                    
-                                    <label class="text-muted small fw-semibold">Reported Date</label>
-                                    <p class="text-dark mb-2">@Model.CreatedAt.ToLocalTime().ToString("f")</p>
-                                    
-                                    <label class="text-muted small fw-semibold">Assigned Department</label>
-                                    <p class="fw-semibold text-primary mb-2">@(Model.Department?.Name ?? "Under Triage")</p>
-                                    
-                                    <label class="text-muted small fw-semibold">Assigned Field Technician</label>
-                                    <p class="fw-semibold text-dark mb-0">@(Model.AssignedToUser?.Name ?? "Pending Assignment")</p>
-                                </div>
-                            </div>
-
-                            @if (!string.IsNullOrEmpty(Model.PhotoPath))
-                            {
-                                <div class="mt-3 border-top pt-3">
-                                    <label class="text-muted small fw-semibold d-block mb-2">Original Reported Photo Proof</label>
-                                    <img src="@Model.PhotoPath" class="img-fluid rounded-3 border shadow-sm" style="max-height: 250px;" alt="Complaint photo" />
-                                </div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Comments & Discussion Stream -->
-                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-comments me-2 text-primary"></i>Updates & Discussion Thread</h5>
-                        </div>
-                        <div class="card-body px-4 pb-4">
-                            @if (canComment)
-                            {
-                                <div class="p-3 bg-light rounded-3 border mb-4">
-                                    <h6 class="fw-bold text-dark mb-2">Leave a Comment or Question</h6>
-                                    <form id="commentForm" enctype="multipart/form-data">
-                                        <input type="hidden" id="complaintId" value="@Model.ComplaintId" />
-                                        <div class="mb-3">
-                                            <textarea class="form-control rounded-3" id="commentContent" rows="3" placeholder="Enter your comment..." maxlength="1000" required></textarea>
-                                        </div>
-                                        
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <input type="file" class="form-control form-control-sm" id="attachments" multiple accept="image/*,.pdf">
-                                            </div>
-                                            <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill fw-semibold">
-                                                <i class="fas fa-paper-plane me-1"></i> Post
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            }
-
-                            <div id="commentsList" class="d-flex flex-column gap-3">
-                                <!-- Loaded via AJAX -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right 4 Columns: Proofs & Rating -->
-                <div class="col-lg-4">
-                    <!-- Technician Photo Proofs -->
-                    @if (Model.TechnicianPhotos != null && Model.TechnicianPhotos.Any())
-                    {
-                        <div class="card border-info rounded-4 shadow-sm mb-4 bg-white">
-                            <div class="card-header bg-info bg-opacity-25 border-0 pt-3 px-4">
-                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-camera me-2"></i>Field Technician Proofs</h6>
-                            </div>
-                            <div class="card-body px-4 pb-3">
-                                @foreach (var photo in Model.TechnicianPhotos.OrderBy(p => p.UploadedAt))
-                                {
-                                    <div class="mb-3 border-bottom pb-2">
-                                        <span class="badge @(photo.PhotoType == "WorkInProgress" ? "bg-warning text-dark" : "bg-success") mb-1">
-                                            @(photo.PhotoType == "WorkInProgress" ? "Work In Progress" : "Fixed / Resolved")
-                                        </span>
-                                        <img src="@photo.PhotoPath" class="img-fluid rounded-3 border d-block my-2" style="max-height: 180px;" alt="@photo.PhotoType Photo">
-                                        <small class="text-muted">Uploaded: @photo.UploadedAt.ToLocalTime().ToString("MMM dd, h:mm tt")</small>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    <!-- Citizen Rating & Review Card -->
-                    @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Fixed && Model.Rating == null && isMyComplaint)
-                    {
-                        <div class="card border-warning rounded-4 shadow-sm mb-4 bg-white">
-                            <div class="card-header bg-warning bg-opacity-25 border-0 pt-3 px-4">
-                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-star me-2 text-warning"></i>Rate Your Resolution</h6>
-                            </div>
-                            <div class="card-body px-4 pb-4 pt-2">
-                                <p class="text-muted small mb-3">Your issue has been marked as <strong>Fixed</strong>! Please rate the technician's work quality.</p>
-                                <div id="ratingForm">
-                                    <div class="mb-3 text-center">
-                                        <div class="rating fs-3">
-                                            @for (int i = 1; i <= 5; i++)
-                                            {
-                                                <span class="star" data-rating="@i">★</span>
-                                            }
-                                        </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-semibold">Feedback Comment (Optional)</label>
-                                        <textarea class="form-control rounded-3" id="ratingComment" rows="3" placeholder="Share your experience..." maxlength="1000"></textarea>
-                                    </div>
-                                    <button class="btn btn-warning w-100 fw-bold rounded-pill text-dark" onclick="submitRating(@Model.ComplaintId)">
-                                        Submit Rating (+5 Pts)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                    else if (Model.Rating != null)
-                    {
-                        <div class="card border rounded-4 shadow-sm mb-4 bg-white">
-                            <div class="card-header bg-white border-0 pt-3 px-4">
-                                <h6 class="fw-bold mb-0 text-dark">Your Submitted Rating</h6>
-                            </div>
-                            <div class="card-body px-4 pb-4 pt-2">
-                                <div class="rating-display text-warning fs-4 mb-2">
-                                    @for (int i = 1; i <= 5; i++)
-                                    {
-                                        <span class="star-display @(i <= Model.Rating.Score ? "filled" : "")">★</span>
-                                    }
-                                    <span class="ms-2 fs-6 text-dark fw-bold">@Model.Rating.Score / 5</span>
-                                </div>
-                                @if (!string.IsNullOrEmpty(Model.Rating.Comment))
-                                {
-                                    <p class="text-muted small mb-0 fst-italic">"@Model.Rating.Comment"</p>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        </main>
+    </div>
+    <div>
+        <a href="/Complaint" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Back to Complaints
+        </a>
     </div>
 </div>
 
-<style>
-.citizen-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+<!-- 1. 4-Stage Horizontal Progress Tracker -->
+<section class="stepper-card" aria-label="Resolution Lifecycle Progress">
+    <div class="stepper-track">
+        <!-- Step 1: Reported -->
+        <div class="stepper-step is-complete">
+            <div class="stepper-node" aria-hidden="true">
+                <i class="fas fa-check"></i>
+            </div>
+            <span class="stepper-label">1. Reported</span>
+            <span class="stepper-sublabel">@Model.CreatedAt.ToLocalTime().ToString("MMM dd")</span>
+        </div>
+
+        <!-- Step 2: Department Routed -->
+        <div class="stepper-step @(step2Complete ? "is-complete" : (step2Active ? "is-active" : ""))">
+            <div class="stepper-node" aria-hidden="true">
+                @if (step2Complete)
+                {
+                    <i class="fas fa-check"></i>
+                }
+                else if (step2Active)
+                {
+                    <i class="fas fa-route"></i>
+                }
+                else
+                {
+                    <span>2</span>
+                }
+            </div>
+            <span class="stepper-label">2. Routed</span>
+            <span class="stepper-sublabel">@(Model.Department?.Name ?? "Triage")</span>
+        </div>
+
+        <!-- Step 3: Technician Dispatched & In Progress -->
+        <div class="stepper-step @(step3Complete ? "is-complete" : (step3Active ? "is-active" : ""))">
+            <div class="stepper-node" aria-hidden="true">
+                @if (step3Complete)
+                {
+                    <i class="fas fa-check"></i>
+                }
+                else if (step3Active)
+                {
+                    <i class="fas fa-tools"></i>
+                }
+                else
+                {
+                    <span>3</span>
+                }
+            </div>
+            <span class="stepper-label">3. In Progress</span>
+            <span class="stepper-sublabel">Field Repair</span>
+        </div>
+
+        <!-- Step 4: Resolved & Verified -->
+        <div class="stepper-step @(step4Complete ? "is-complete" : "")">
+            <div class="stepper-node" aria-hidden="true">
+                @if (step4Complete)
+                {
+                    <i class="fas fa-circle-check"></i>
+                }
+                else
+                {
+                    <span>4</span>
+                }
+            </div>
+            <span class="stepper-label">4. Resolved</span>
+            <span class="stepper-sublabel">Verified</span>
+        </div>
+    </div>
+</section>
+
+<!-- 2-Column Content Layout -->
+<div class="details-grid">
+    <!-- Left Column (Case Details & Discussion Timeline) -->
+    <div class="details-col-main">
+        <!-- Grievance Overview Card -->
+        <div class="details-card">
+            <div class="details-card__header">
+                <h2 class="details-card__title">
+                    <i class="fas fa-circle-info text-primary" aria-hidden="true"></i>
+                    <span>Grievance Details</span>
+                </h2>
+                <span class="category-pill">@Model.ProblemType</span>
+            </div>
+            <div class="details-card__body">
+                <div class="overview-grid">
+                    <div class="overview-field">
+                        <span class="overview-field__label">Location / Address</span>
+                        <p class="overview-field__val">
+                            <i class="fas fa-map-pin text-primary me-1" aria-hidden="true"></i>
+                            @(string.IsNullOrWhiteSpace(Model.Address) ? "Coordinates pinned on GIS map" : Model.Address)
+                        </p>
+                        <a href="https://www.google.com/maps/search/?api=1&query=@Model.Latitude,@Model.Longitude" 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           class="small text-primary text-decoration-none mt-1">
+                            <i class="fas fa-arrow-up-right-from-square me-1" aria-hidden="true"></i>Open in Google Maps (@Model.Latitude.ToString("F4"), @Model.Longitude.ToString("F4"))
+                        </a>
+                    </div>
+
+                    <div class="overview-field">
+                        <span class="overview-field__label">Reported By</span>
+                        <p class="overview-field__val">@Model.User?.Name</p>
+                        <span class="small text-muted">@Model.CreatedAt.ToLocalTime().ToString("f")</span>
+                    </div>
+
+                    <div class="overview-field">
+                        <span class="overview-field__label">Assigned Department</span>
+                        <p class="overview-field__val text-primary fw-bold">
+                            <i class="fas fa-building me-1" aria-hidden="true"></i>
+                            @(Model.Department?.Name ?? "Pending Assignment")
+                        </p>
+                    </div>
+
+                    <div class="overview-field">
+                        <span class="overview-field__label">Field Technician</span>
+                        <p class="overview-field__val">
+                            <i class="fas fa-user-gear me-1" aria-hidden="true"></i>
+                            @(Model.AssignedToUser?.Name ?? "Pending Dispatch")
+                        </p>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Description))
+                {
+                    <div class="mt-4 pt-3 border-top">
+                        <span class="overview-field__label">Citizen Context Description</span>
+                        <p class="overview-field__val mt-1">@Model.Description</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.PhotoPath))
+                {
+                    <div class="evidence-photo-box">
+                        <span class="overview-field__label">Reported Photo Evidence</span>
+                        <div>
+                            <a href="@Model.PhotoPath" target="_blank" rel="noopener noreferrer">
+                                <img src="@Model.PhotoPath" alt="Original complaint photo evidence" class="evidence-photo-thumb" />
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- 2. Chat-Style Comments & Discussion Stream -->
+        <div class="details-card">
+            <div class="details-card__header">
+                <h2 class="details-card__title">
+                    <i class="fas fa-comments text-primary" aria-hidden="true"></i>
+                    <span>Case Timeline & Updates</span>
+                </h2>
+                <span class="badge bg-light text-muted border" id="commentCountBadge">0 updates</span>
+            </div>
+            <div class="details-card__body">
+                @if (canComment)
+                {
+                    <div class="comment-form-box">
+                        <form id="commentForm" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" id="complaintId" value="@Model.ComplaintId" />
+                            <textarea class="comment-textarea" 
+                                      id="commentContent" 
+                                      rows="3" 
+                                      placeholder="Leave an official update, question, or verification note..." 
+                                      maxlength="1000" 
+                                      required></textarea>
+
+                            <div class="comment-form-actions">
+                                <input type="file" 
+                                       class="form-control form-control-sm" 
+                                       id="commentAttachments" 
+                                       multiple 
+                                       accept="image/*,.pdf" 
+                                       style="max-width: 260px;" />
+
+                                <button type="submit" class="dashboard-action-btn" id="btnPostComment">
+                                    <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                                    <span>Post Update</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                }
+
+                <div class="comments-stream" id="commentsList" aria-live="polite">
+                    <div class="text-center py-4 text-muted small">
+                        <i class="fas fa-circle-notch fa-spin me-2" aria-hidden="true"></i>Loading case timeline...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column (Proofs & Rating Feedback) -->
+    <div class="details-col-side">
+        <!-- Technician Photo Proofs -->
+        @if (Model.TechnicianPhotos != null && Model.TechnicianPhotos.Any())
+        {
+            <div class="details-card">
+                <div class="details-card__header">
+                    <h2 class="details-card__title">
+                        <i class="fas fa-camera text-primary" aria-hidden="true"></i>
+                        <span>Technician Proof of Work</span>
+                    </h2>
+                </div>
+                <div class="details-card__body">
+                    @foreach (var photo in Model.TechnicianPhotos.OrderBy(p => p.UploadedAt))
+                    {
+                        var isFixedPhoto = photo.PhotoType != "WorkInProgress";
+                        <div class="mb-4 pb-3 border-bottom">
+                            <span class="status-pill @(isFixedPhoto ? "status-pill--fixed" : "status-pill--inprogress") mb-2">
+                                @(isFixedPhoto ? "Verified Resolution Proof" : "Work In Progress")
+                            </span>
+                            <a href="@photo.PhotoPath" target="_blank" rel="noopener noreferrer">
+                                <img src="@photo.PhotoPath" class="img-fluid rounded-3 border d-block my-2 shadow-xs" style="max-height: 180px; width: 100%; object-fit: cover;" alt="@photo.PhotoType Photo Proof" />
+                            </a>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-clock me-1" aria-hidden="true"></i>Uploaded: @photo.UploadedAt.ToLocalTime().ToString("MMM dd, h:mm tt")
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- 3. Polished Star Rating Component -->
+        @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Fixed && Model.Rating == null && isMyComplaint)
+        {
+            <div class="details-card" style="border-color: var(--status-inprogress-border); background: var(--color-surface);">
+                <div class="details-card__header" style="background: var(--status-inprogress-bg);">
+                    <h2 class="details-card__title" style="color: var(--status-inprogress-strong);">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <span>Rate Resolution Quality</span>
+                    </h2>
+                </div>
+                <div class="details-card__body">
+                    <p class="text-muted small mb-3">
+                        Your grievance has been marked as <strong>Fixed</strong>! How satisfied are you with the municipal repair?
+                    </p>
+
+                    <!-- Interactive SVG Star Rating -->
+                    <div class="rating-interactive" id="starRatingContainer" role="radiogroup" aria-label="Rate from 1 to 5 stars">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <button type="button" 
+                                    class="rating-star-btn" 
+                                    data-rating="@i" 
+                                    role="radio" 
+                                    aria-checked="false" 
+                                    aria-label="@i star@(i > 1 ? "s" : "")">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                </svg>
+                            </button>
+                        }
+                    </div>
+                    <div class="text-center small text-muted mb-3" id="ratingLabel">Click stars to select rating</div>
+
+                    <div class="mb-3">
+                        <label class="form-field-label" for="ratingComment">Citizen Feedback (Optional)</label>
+                        <textarea class="form-field-textarea" id="ratingComment" rows="2" placeholder="Share your experience with the technician's work..."></textarea>
+                    </div>
+
+                    <button type="button" class="dashboard-action-btn w-100 justify-content-center" id="btnSubmitRating">
+                        <i class="fas fa-award me-1" aria-hidden="true"></i>
+                        <span>Submit Feedback (+5 Civic Pts)</span>
+                    </button>
+                </div>
+            </div>
+        }
+        else if (Model.Rating != null)
+        {
+            <div class="details-card">
+                <div class="details-card__header">
+                    <h2 class="details-card__title">
+                        <i class="fas fa-star text-warning" aria-hidden="true"></i>
+                        <span>Citizen Rating Record</span>
+                    </h2>
+                </div>
+                <div class="details-card__body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="rating-static-stars" aria-label="Rated @Model.Rating.Score out of 5">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var isFilled = i <= Model.Rating.Score;
+                                <svg viewBox="0 0 24 24" class="@(isFilled ? "" : "is-empty")" aria-hidden="true">
+                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                </svg>
+                            }
+                        </div>
+                        <strong class="text-dark">@Model.Rating.Score / 5</strong>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Rating.Comment))
+                    {
+                        <p class="text-muted small mb-0 fst-italic">"@Model.Rating.Comment"</p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/complaint-details.css" asp-append-version="true" />
 }
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-}
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-.status-badge.pending { background-color: #dc3545 !important; color: #fff; }
-.status-badge.inprogress { background-color: #ffc107 !important; color: #000; }
-.status-badge.fixed { background-color: #198754 !important; color: #fff; }
-.star { cursor: pointer; color: #cbd5e1; transition: color 0.2s; }
-.star:hover, .star.selected { color: #f59e0b; }
-.star-display { color: #cbd5e1; }
-.star-display.filled { color: #f59e0b; }
-</style>
 
 @section Scripts {
 <script>
-    let selectedRating = 0;
+    document.addEventListener('DOMContentLoaded', function () {
+        const complaintId = @Model.ComplaintId;
+        let selectedScore = 0;
 
-    $(document).ready(function() {
+        // Load Comments Stream
         loadComments();
-        
-        $('.rating .star').click(function() {
-            selectedRating = $(this).data('rating');
-            $('.rating .star').each(function() {
-                if ($(this).data('rating') <= selectedRating) {
-                    $(this).addClass('selected');
-                } else {
-                    $(this).removeClass('selected');
-                }
+
+        // 3. Interactive Star Rating Physics
+        const starBtns = document.querySelectorAll('.rating-star-btn');
+        const ratingLabel = document.getElementById('ratingLabel');
+        const ratingDescriptions = [
+            '1 star — Poor resolution',
+            '2 stars — Below expectations',
+            '3 stars — Satisfactory repair',
+            '4 stars — Very good resolution',
+            '5 stars — Excellent & speedy service!'
+        ];
+
+        starBtns.forEach(btn => {
+            btn.addEventListener('mouseenter', function () {
+                const hoverRating = parseInt(this.getAttribute('data-rating'));
+                highlightStars(hoverRating);
+                if (ratingLabel) ratingLabel.textContent = ratingDescriptions[hoverRating - 1];
+            });
+
+            btn.addEventListener('click', function () {
+                selectedScore = parseInt(this.getAttribute('data-rating'));
+                starBtns.forEach(b => {
+                    const r = parseInt(b.getAttribute('data-rating'));
+                    b.setAttribute('aria-checked', r === selectedScore ? 'true' : 'false');
+                });
+                highlightStars(selectedScore);
+                if (ratingLabel) ratingLabel.textContent = ratingDescriptions[selectedScore - 1];
             });
         });
-        
-        $('#commentForm').submit(function(e) {
-            e.preventDefault();
-            submitComment();
-        });
-    });
-    
-    function loadComments() {
-        $.get('/Comment/GetComments', { complaintId: @Model.ComplaintId })
-            .done(function(response) {
-                if (response.success) {
-                    displayComments(response.comments);
+
+        const starContainer = document.getElementById('starRatingContainer');
+        if (starContainer) {
+            starContainer.addEventListener('mouseleave', function () {
+                highlightStars(selectedScore);
+                if (ratingLabel) {
+                    ratingLabel.textContent = selectedScore > 0 ? ratingDescriptions[selectedScore - 1] : 'Click stars to select rating';
                 }
             });
-    }
-    
-    function displayComments(comments) {
-        const commentsList = $('#commentsList');
-        commentsList.empty();
-        
-        if (comments.length === 0) {
-            commentsList.append('<p class="text-muted small text-center py-3">No updates or comments yet.</p>');
-            return;
         }
-        
-        comments.forEach(function(comment) {
-            const roleBadge = comment.authorRole === 'User' ? 'bg-secondary' : 'bg-primary';
-            
-            commentsList.append(`
-                <div class="card border rounded-3 p-3 bg-white shadow-sm">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge ${roleBadge} rounded-pill">${comment.authorRole}</span>
-                            <strong class="text-dark small">${comment.authorName}</strong>
+
+        function highlightStars(score) {
+            starBtns.forEach(btn => {
+                const r = parseInt(btn.getAttribute('data-rating'));
+                if (r <= score) {
+                    btn.classList.add('is-active');
+                } else {
+                    btn.classList.remove('is-active');
+                }
+            });
+        }
+
+        // Submit Rating Action (POST /Complaint/Rate)
+        const btnSubmitRating = document.getElementById('btnSubmitRating');
+        if (btnSubmitRating) {
+            btnSubmitRating.addEventListener('click', function () {
+                if (selectedScore === 0) {
+                    if (window.showToast) window.showToast('Please select a star rating first.', 'warning');
+                    else alert('Please select a star rating first.');
+                    return;
+                }
+
+                const commentText = document.getElementById('ratingComment') ? document.getElementById('ratingComment').value : '';
+
+                $.post('/Complaint/Rate', {
+                    complaintId: complaintId,
+                    score: selectedScore,
+                    comment: commentText
+                }).done(function (res) {
+                    if (res.success) {
+                        if (window.showToast) window.showToast('Thank you! Your feedback has been recorded.', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        const msg = 'Error: ' + (res.message || 'Could not record rating');
+                        if (window.showToast) window.showToast(msg, 'error');
+                        else alert(msg);
+                    }
+                }).fail(function () {
+                    if (window.showToast) window.showToast('Network error. Please try again.', 'error');
+                    else alert('Network error. Please try again.');
+                });
+            });
+        }
+
+        // 2. Comments Stream Handling
+        function loadComments() {
+            $.get('/Comment/GetComments', { complaintId: complaintId })
+                .done(function (res) {
+                    if (res.success) {
+                        renderComments(res.comments);
+                    }
+                })
+                .fail(function () {
+                    const list = document.getElementById('commentsList');
+                    if (list) list.innerHTML = '<p class="text-danger small text-center py-3">Could not load case timeline.</p>';
+                });
+        }
+
+        function renderComments(comments) {
+            const list = document.getElementById('commentsList');
+            const badge = document.getElementById('commentCountBadge');
+            if (!list) return;
+
+            if (badge) badge.textContent = `${comments.length} update${comments.length !== 1 ? 's' : ''}`;
+
+            if (comments.length === 0) {
+                list.innerHTML = '<p class="text-muted small text-center py-4">No comments or timeline notes yet.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            comments.forEach(c => {
+                const isOfficial = c.authorRole === 'Admin' || c.authorRole === 'Technician';
+                const roleTagClass = c.authorRole === 'Admin' ? 'comment-role-tag--admin' : 
+                                     c.authorRole === 'Technician' ? 'comment-role-tag--technician' : 'comment-role-tag--user';
+
+                const bubble = document.createElement('div');
+                bubble.className = `comment-bubble ${isOfficial ? 'comment-bubble--official' : ''}`;
+
+                let attachmentsHtml = '';
+                if (c.attachments && c.attachments.length > 0) {
+                    attachmentsHtml = '<div class="d-flex gap-2 flex-wrap mt-2 pt-2 border-top">';
+                    c.attachments.forEach(att => {
+                        const isImg = att.contentType && att.contentType.startsWith('image/');
+                        if (isImg) {
+                            attachmentsHtml += `<a href="${att.filePath}" target="_blank" rel="noopener noreferrer"><img src="${att.filePath}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;" alt="${att.fileName}" /></a>`;
+                        } else {
+                            attachmentsHtml += `<a href="${att.filePath}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-light border small text-decoration-none"><i class="fas fa-file-pdf text-danger me-1"></i>${att.fileName}</a>`;
+                        }
+                    });
+                    attachmentsHtml += '</div>';
+                }
+
+                bubble.innerHTML = `
+                    <div class="comment-bubble__head">
+                        <div class="comment-author">
+                            <span class="comment-role-tag ${roleTagClass}">${c.authorRole}</span>
+                            <span class="comment-author-name">${escapeHtml(c.authorName)}</span>
                         </div>
-                        <small class="text-muted">${new Date(comment.createdAt).toLocaleString()}</small>
+                        <span class="comment-timestamp">${new Date(c.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                    <p class="mb-2 text-dark small">${comment.content}</p>
-                </div>
-            `);
-        });
-    }
-    
-    function submitComment() {
-        const formData = new FormData();
-        formData.append('complaintId', $('#complaintId').val());
-        formData.append('content', $('#commentContent').val());
-        formData.append('visibleToUser', true);
-        
-        $.ajax({
-            url: '/Comment/Create',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                if (response.success) {
-                    $('#commentContent').val('');
-                    loadComments();
-                } else {
-                    alert('Error: ' + response.message);
-                }
-            }
-        });
-    }
-    
-    function submitRating(complaintId) {
-        if (selectedRating === 0) {
-            alert('Please select a star rating first.');
-            return;
+                    <p class="comment-text">${escapeHtml(c.content)}</p>
+                    ${attachmentsHtml}
+                `;
+                list.appendChild(bubble);
+            });
         }
-        
-        $.post('/Complaint/SubmitRating', {
-            complaintId: complaintId,
-            score: selectedRating,
-            comment: $('#ratingComment').val()
-        }).done(function(response) {
-            if (response.success) {
-                alert('Thank you! Your rating has been recorded.');
-                location.reload();
-            } else {
-                alert('Error: ' + response.message);
-            }
-        });
-    }
+
+        // Post Comment Form Handling
+        const commentForm = document.getElementById('commentForm');
+        if (commentForm) {
+            commentForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const contentInput = document.getElementById('commentContent');
+                const fileInput = document.getElementById('commentAttachments');
+                const btnPost = document.getElementById('btnPostComment');
+
+                if (!contentInput.value.trim()) return;
+
+                btnPost.disabled = true;
+                const formData = new FormData();
+                formData.append('complaintId', complaintId);
+                formData.append('content', contentInput.value.trim());
+                formData.append('visibleToUser', 'true');
+
+                if (fileInput && fileInput.files) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append('attachments', fileInput.files[i]);
+                    }
+                }
+
+                $.ajax({
+                    url: '/Comment/Create',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        btnPost.disabled = false;
+                        if (res.success) {
+                            contentInput.value = '';
+                            if (fileInput) fileInput.value = '';
+                            if (window.showToast) window.showToast('Update posted successfully.', 'success');
+                            loadComments();
+                        } else {
+                            const msg = 'Error: ' + (res.message || 'Failed to post update');
+                            if (window.showToast) window.showToast(msg, 'error');
+                            else alert(msg);
+                        }
+                    },
+                    error: function () {
+                        btnPost.disabled = false;
+                        if (window.showToast) window.showToast('Network error posting comment.', 'error');
+                        else alert('Network error posting comment.');
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+    });
 </script>
 }

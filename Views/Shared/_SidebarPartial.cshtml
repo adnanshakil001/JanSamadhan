@@ -1,0 +1,196 @@
+@{
+    var user = Context.User;
+    var isAuthenticated = user?.Identity?.IsAuthenticated ?? false;
+    var isAdmin = user?.IsInRole("Admin") ?? false;
+    var isTechnician = user?.IsInRole("Technician") ?? false;
+    var isDepartmentManager = user?.IsInRole("DepartmentManager") ?? false;
+    var isCitizen = isAuthenticated && !isAdmin && !isTechnician && !isDepartmentManager;
+
+    var currentPath = (Context.Request.Path.Value ?? "/").TrimEnd('/');
+    if (string.IsNullOrEmpty(currentPath))
+    {
+        currentPath = "/";
+    }
+
+    bool IsExact(string path) => string.Equals(currentPath, path, StringComparison.OrdinalIgnoreCase);
+    bool IsUnder(string path) => currentPath.StartsWith(path + "/", StringComparison.OrdinalIgnoreCase);
+    string NavClass(bool active) => active ? "sidebar-link is-active" : "sidebar-link";
+
+    var displayName = user?.FindFirst(ClaimTypes.Name)?.Value ?? user?.Identity?.Name ?? "Guest";
+    var initial = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Substring(0, 1).ToUpperInvariant();
+    var roleLabel = isAdmin ? "Administrator"
+        : isTechnician ? "Field Technician"
+        : isDepartmentManager ? "Department Manager"
+        : isCitizen ? "Citizen"
+        : "Visitor";
+
+    var isComplaintDashboard = IsExact("/Complaint") || IsUnder("/Complaint/Details");
+    var isComplaintCreate = IsExact("/Complaint/Create");
+    var isNearby = IsExact("/Home/Nearby");
+    var isBadges = IsExact("/Badge");
+    var isCitizenScoreboard = IsExact("/Home/Scoreboard");
+
+    var isAdminDashboard = IsExact("/Admin") || IsUnder("/Admin/Details");
+    var isAdminMap = IsExact("/Map/AdminMap");
+    var isRoleManagement = IsExact("/Role");
+    var isCreateTechnician = IsExact("/Admin/CreateTechnician");
+    var isAdminScoreboard = IsExact("/Admin/Scoreboard");
+    var isTechnicianScoreboard = IsExact("/Admin/TechnicianScoreboard");
+
+    var isTechnicianDashboard = IsExact("/Technician") || IsExact("/Technician/Dashboard") || IsUnder("/Technician/Details");
+    var isAvailableWork = IsExact("/Technician/AvailableWork");
+    var isTechnicianBoard = IsExact("/Technician/Scoreboard");
+
+    var isDepartmentQueue = IsExact("/Department") || IsUnder("/Department");
+}
+
+<aside id="appSidebar" class="app-sidebar" aria-label="Sidebar">
+    <div class="app-sidebar__header">
+        <a class="app-sidebar__brand" href="/" aria-label="JanSamadhan home">
+            <span class="app-sidebar__brand-icon" aria-hidden="true">
+                <i class="fas fa-landmark"></i>
+            </span>
+            <span class="app-sidebar__brand-text">JanSamadhan</span>
+        </a>
+        <button type="button" class="app-sidebar__close" data-sidebar-close aria-label="Close navigation menu">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <nav class="app-sidebar__nav" aria-label="Primary navigation">
+        @if (!isAuthenticated)
+        {
+            <span class="app-sidebar__section">Public portal</span>
+            <a class="sidebar-link @(IsExact("/") ? "is-active" : "")" href="/" aria-current="@(IsExact("/") ? "page" : null)" title="Home">
+                <i class="fas fa-house" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Home</span>
+            </a>
+            <a class="sidebar-link @(IsExact("/Account/Login") ? "is-active" : "")" href="/Account/Login" aria-current="@(IsExact("/Account/Login") ? "page" : null)" title="Citizen login">
+                <i class="fas fa-right-to-bracket" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Citizen login</span>
+            </a>
+            <a class="sidebar-link @(IsExact("/Account/Register") ? "is-active" : "")" href="/Account/Register" aria-current="@(IsExact("/Account/Register") ? "page" : null)" title="Create account">
+                <i class="fas fa-user-plus" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Create account</span>
+            </a>
+        }
+        else if (isAdmin)
+        {
+            <span class="app-sidebar__section">Operations</span>
+            <a class="@NavClass(isAdminDashboard)" href="/Admin" aria-current="@(isAdminDashboard ? "page" : null)" title="Admin dashboard">
+                <i class="fas fa-table-columns" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Admin dashboard</span>
+            </a>
+            <a class="@NavClass(isAdminMap)" href="/Map/AdminMap" aria-current="@(isAdminMap ? "page" : null)" title="Map view">
+                <i class="fas fa-map-location-dot" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Map view</span>
+            </a>
+            <a class="@NavClass(isRoleManagement)" href="/Role" aria-current="@(isRoleManagement ? "page" : null)" title="Role management">
+                <i class="fas fa-users-gear" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Role management</span>
+            </a>
+
+            <span class="app-sidebar__section">People</span>
+            <a class="@NavClass(isCreateTechnician)" href="/Admin/CreateTechnician" aria-current="@(isCreateTechnician ? "page" : null)" title="Create technician">
+                <i class="fas fa-user-plus" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Create technician</span>
+            </a>
+
+            <span class="app-sidebar__section">Insights</span>
+            <a class="@NavClass(isAdminScoreboard)" href="/Admin/Scoreboard" aria-current="@(isAdminScoreboard ? "page" : null)" title="Citizen scoreboard">
+                <i class="fas fa-ranking-star" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Citizen scoreboard</span>
+            </a>
+            <a class="@NavClass(isTechnicianScoreboard)" href="/Admin/TechnicianScoreboard" aria-current="@(isTechnicianScoreboard ? "page" : null)" title="Technician scoreboard">
+                <i class="fas fa-chart-line" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Technician scoreboard</span>
+            </a>
+        }
+        else if (isTechnician)
+        {
+            <span class="app-sidebar__section">Field work</span>
+            <a class="@NavClass(isTechnicianDashboard)" href="/Technician/Dashboard" aria-current="@(isTechnicianDashboard ? "page" : null)" title="My tasks">
+                <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+                <span class="sidebar-link__label">My tasks</span>
+            </a>
+            <a class="@NavClass(isAvailableWork)" href="/Technician/AvailableWork" aria-current="@(isAvailableWork ? "page" : null)" title="Available work">
+                <i class="fas fa-briefcase" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Available work</span>
+            </a>
+
+            <span class="app-sidebar__section">Performance</span>
+            <a class="@NavClass(isTechnicianBoard)" href="/Technician/Scoreboard" aria-current="@(isTechnicianBoard ? "page" : null)" title="Performance scoreboard">
+                <i class="fas fa-chart-simple" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Performance</span>
+            </a>
+        }
+        else if (isDepartmentManager)
+        {
+            <span class="app-sidebar__section">Department</span>
+            <a class="@NavClass(isDepartmentQueue)" href="/Department" aria-current="@(isDepartmentQueue ? "page" : null)" title="Department queue">
+                <i class="fas fa-list-check" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Department queue</span>
+            </a>
+            <a class="@NavClass(isAdminMap)" href="/Map/AdminMap" aria-current="@(isAdminMap ? "page" : null)" title="Map view">
+                <i class="fas fa-map-location-dot" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Map view</span>
+            </a>
+        }
+        else
+        {
+            <span class="app-sidebar__section">My civic space</span>
+            <a class="@NavClass(isComplaintDashboard)" href="/Complaint" aria-current="@(isComplaintDashboard ? "page" : null)" title="My complaints">
+                <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                <span class="sidebar-link__label">My complaints</span>
+            </a>
+            <a class="@NavClass(isComplaintCreate)" href="/Complaint/Create" aria-current="@(isComplaintCreate ? "page" : null)" title="Report an issue">
+                <i class="fas fa-circle-plus" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Report an issue</span>
+            </a>
+
+            <span class="app-sidebar__section">Explore</span>
+            <a class="@NavClass(isNearby)" href="/Home/Nearby" aria-current="@(isNearby ? "page" : null)" title="Nearby issues">
+                <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Nearby issues</span>
+            </a>
+            <a class="@NavClass(isBadges)" href="/Badge" aria-current="@(isBadges ? "page" : null)" title="Badges and rewards">
+                <i class="fas fa-medal" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Badges &amp; rewards</span>
+            </a>
+            <a class="@NavClass(isCitizenScoreboard)" href="/Home/Scoreboard" aria-current="@(isCitizenScoreboard ? "page" : null)" title="Citizen leaderboard">
+                <i class="fas fa-trophy" aria-hidden="true"></i>
+                <span class="sidebar-link__label">Leaderboard</span>
+            </a>
+        }
+    </nav>
+
+    <div class="app-sidebar__footer">
+        @if (isAuthenticated)
+        {
+            <div class="app-sidebar__user">
+                <span class="app-sidebar__avatar" aria-hidden="true">@initial</span>
+                <span class="app-sidebar__user-meta">
+                    <span class="app-sidebar__user-name">@displayName</span>
+                    <span class="app-sidebar__user-role">@roleLabel</span>
+                </span>
+            </div>
+            <div class="app-sidebar__footer-actions">
+                @if (!isDepartmentManager)
+                {
+                    <a class="app-sidebar__footer-link" href="/Account/Profile">
+                        <i class="fas fa-user" aria-hidden="true"></i>
+                        <span>My profile</span>
+                    </a>
+                }
+                <a class="app-sidebar__footer-link is-danger" href="/Account/Logout">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                    <span>Sign out</span>
+                </a>
+            </div>
+        }
+        else
+        {
+            <a class="btn btn-primary w-100 fw-semibold" href="/Account/Login">Sign in</a>
+        }
+    </div>
+</aside>

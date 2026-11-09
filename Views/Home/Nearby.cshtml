@@ -1,169 +1,84 @@
 @{
-    ViewData["Title"] = "Nearby Civic Issues - JanSamadhan";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
+    ViewData["Title"] = "Nearby Civic Issues — JanSamadhan";
 }
 
-<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
-        <div>
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
-
-            <nav class="nav flex-column gap-1">
-                <a href="/Complaint" class="sidebar-link">
-                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
-                </a>
-                <a href="/Complaint/Create" class="sidebar-link">
-                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
-                </a>
-                <a href="/Home/Nearby" class="sidebar-link active">
-                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
-                </a>
-                <a href="/Badge" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> Badges & Rewards
-                </a>
-                <a href="/Home/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-trophy me-3"></i> Leaderboard
-                </a>
-            </nav>
-        </div>
-
-        <div class="pt-3 border-top">
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-4">
-                <a href="/Complaint" class="top-tab-link">My Complaints</a>
-                <a href="/Complaint/Create" class="top-tab-link text-success fw-bold">+ Report Issue</a>
-                <a href="/Home/Nearby" class="top-tab-link active">Nearby Map</a>
-                <a href="/Badge" class="top-tab-link">Badges</a>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
-
-        <main class="p-4 flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">Nearby Civic Anomalies</h2>
-                    <p class="text-muted mb-0 small">Real-time proximity scan of complaints within 500m radius of your GPS location</p>
-                </div>
-                <div>
-                    <a href="/Complaint/Create" class="btn btn-primary rounded-pill px-4 fw-semibold">
-                        <i class="fas fa-plus me-1"></i> Report Here
-                    </a>
-                </div>
-            </div>
-
-            <div class="row g-4">
-                <!-- Map Column -->
-                <div class="col-lg-8">
-                    <div class="card border rounded-4 shadow-sm bg-white overflow-hidden p-2">
-                        <div id="map" style="height: 600px; width: 100%; border-radius: 12px;"></div>
-                    </div>
-                </div>
-
-                <!-- Nearby List Column -->
-                <div class="col-lg-4">
-                    <div class="card border rounded-4 shadow-sm bg-white h-100 d-flex flex-column">
-                        <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
-                            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-radar me-2 text-primary"></i>Nearby Stream</h6>
-                            <span class="badge bg-light text-dark border">500m Radius</span>
-                        </div>
-                        <div class="card-body px-4 pb-4 overflow-auto flex-grow-1" id="nearbyList" style="max-height: 520px;">
-                            <div class="text-center py-5 text-muted">
-                                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-                                <p class="small mb-0">Detecting nearby issues...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+        <h1 class="h3 fw-bolder text-dark mb-1">Nearby Civic Anomalies</h1>
+        <p class="text-muted small mb-0">Real-time proximity scan of grievances reported within 1km of your location.</p>
+    </div>
+    <div>
+        <a href="/Complaint/Create" class="dashboard-action-btn">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            <span>Report Problem Here</span>
+        </a>
     </div>
 </div>
 
-<style>
-.citizen-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+<!-- 2-Column Map & Stream Layout -->
+<div class="nearby-grid">
+    <!-- Left: Map Canvas & Category Filter Pills -->
+    <div class="nearby-map-card">
+        <!-- Interactive Category Filter Bar -->
+        <div class="nearby-filter-bar" role="tablist" aria-label="Filter Map by Category">
+            <button type="button" class="nearby-filter-pill active" data-category="all" role="tab" aria-selected="true">All Issues</button>
+            <button type="button" class="nearby-filter-pill" data-category="Pothole" role="tab" aria-selected="false">Potholes</button>
+            <button type="button" class="nearby-filter-pill" data-category="Streetlight" role="tab" aria-selected="false">Streetlights</button>
+            <button type="button" class="nearby-filter-pill" data-category="Water Disposal" role="tab" aria-selected="false">Water Leaks</button>
+            <button type="button" class="nearby-filter-pill" data-category="Traffic Signal" role="tab" aria-selected="false">Traffic Signals</button>
+            <button type="button" class="nearby-filter-pill" data-category="Sewer Lids" role="tab" aria-selected="false">Sewer Lids</button>
+        </div>
+
+        <div id="map" class="nearby-map-canvas" role="region" aria-label="Nearby Complaints Map"></div>
+    </div>
+
+    <!-- Right: Proximity Stream Feed -->
+    <div class="nearby-stream-card">
+        <div class="nearby-stream-header">
+            <div>
+                <h2 class="h6 fw-bold mb-0 text-dark">
+                    <i class="fas fa-radar text-primary me-2" aria-hidden="true"></i>Nearby Live Stream
+                </h2>
+                <small class="text-muted" id="nearbyCountLabel">Scanning area...</small>
+            </div>
+            <span class="badge bg-light text-muted border small">1km Radius</span>
+        </div>
+
+        <div class="nearby-stream-list" id="nearbyList" aria-live="polite">
+            <div class="text-center py-5 text-muted">
+                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                <p class="small mb-0">Detecting nearby issues via GPS...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/badges-map.css" asp-append-version="true" />
 }
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-}
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-.top-tab-link {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding-bottom: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-.top-tab-link:hover {
-    color: #0f172a;
-}
-.top-tab-link.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
-    font-weight: 600;
-}
-.custom-marker {
-    background: transparent !important;
-    border: none !important;
-}
-</style>
 
 @section Scripts {
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
     let map;
     let userLocation = null;
+    let allComplaints = [];
+    let currentCategoryFilter = 'all';
+    let mapMarkers = [];
 
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function () {
         initializeMap();
         getCurrentLocation();
+        setupFilterPills();
     });
 
     function initializeMap() {
-        map = L.map('map').setView([23.2599, 77.4126], 13);
-        
+        // Default Center: Bhopal
+        map = L.map('map', {
+            zoomControl: true,
+            scrollWheelZoom: true
+        }).setView([23.2599, 77.4126], 14);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
@@ -173,47 +88,50 @@
     function getCurrentLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                function(position) {
+                function (position) {
                     userLocation = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     };
-                    
+
                     map.setView([userLocation.lat, userLocation.lng], 15);
-                    
+
+                    // User Location Marker
                     const userIcon = L.divIcon({
-                        className: 'custom-marker',
-                        html: `<div style="background-color: #2563eb; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(37,99,235,0.8);"></div>`,
-                        iconSize: [22, 22],
-                        iconAnchor: [11, 11]
+                        className: 'user-radar-marker',
+                        html: `<div style="background-color: #2563eb; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 12px rgba(37,99,235,0.8);"></div>`,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
                     });
 
                     L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
                         .addTo(map)
                         .bindPopup('<b>Your Current Location</b>')
                         .openPopup();
-                    
+
+                    // Proximity radius ring
                     L.circle([userLocation.lat, userLocation.lng], {
-                        radius: 500,
+                        radius: 1000,
                         color: '#2563eb',
                         fillColor: '#3b82f6',
-                        fillOpacity: 0.1,
-                        weight: 1
+                        fillOpacity: 0.08,
+                        weight: 1.5,
+                        dashArray: '4, 4'
                     }).addTo(map);
 
-                    loadNearbyComplaints();
+                    fetchNearbyComplaints();
                 },
-                function(error) {
-                    console.error('Error getting location:', error);
-                    loadNearbyComplaints();
-                }
+                function () {
+                    fetchNearbyComplaints();
+                },
+                { enableHighAccuracy: true, timeout: 8000 }
             );
         } else {
-            loadNearbyComplaints();
+            fetchNearbyComplaints();
         }
     }
 
-    function loadNearbyComplaints() {
+    function fetchNearbyComplaints() {
         const queryLat = userLocation ? userLocation.lat : 23.2599;
         const queryLng = userLocation ? userLocation.lng : 77.4126;
 
@@ -221,81 +139,130 @@
             lat: queryLat,
             lng: queryLng,
             radiusMeters: 1000
-        }).done(function(complaints) {
-            displayNearbyComplaints(complaints);
-            displayComplaintsOnMap(complaints);
-        }).fail(function() {
+        }).done(function (complaints) {
+            allComplaints = complaints || [];
+            applyFilters();
+        }).fail(function () {
             $('#nearbyList').html('<p class="text-muted small text-center py-4">No nearby issues found within this radius.</p>');
+            $('#nearbyCountLabel').textContent = '0 issues detected';
         });
     }
 
-    function displayNearbyComplaints(complaints) {
+    function setupFilterPills() {
+        const pills = document.querySelectorAll('.nearby-filter-pill');
+        pills.forEach(pill => {
+            pill.addEventListener('click', function () {
+                pills.forEach(p => {
+                    p.classList.remove('active');
+                    p.setAttribute('aria-selected', 'false');
+                });
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
+                currentCategoryFilter = this.getAttribute('data-category');
+                applyFilters();
+            });
+        });
+    }
+
+    function applyFilters() {
+        const filtered = allComplaints.filter(c => {
+            if (currentCategoryFilter === 'all') return true;
+            const type = c.ProblemType || c.problemType || '';
+            return type.toLowerCase().includes(currentCategoryFilter.toLowerCase());
+        });
+
+        renderNearbyList(filtered);
+        renderMapMarkers(filtered);
+    }
+
+    function renderNearbyList(complaints) {
         const list = $('#nearbyList');
-        
-        if (!complaints || complaints.length === 0) {
-            list.html('<div class="text-center py-5 text-muted"><i class="fas fa-check-circle fa-2x text-success mb-2"></i><p class="small mb-0">No active grievances in this vicinity!</p></div>');
+        const countLabel = document.getElementById('nearbyCountLabel');
+
+        if (countLabel) {
+            countLabel.textContent = `${complaints.length} issue${complaints.length !== 1 ? 's' : ''} in area`;
+        }
+
+        if (complaints.length === 0) {
+            list.html(`
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-circle-check fa-2x text-success mb-2" aria-hidden="true"></i>
+                    <p class="small mb-0">No active complaints found in this category.</p>
+                </div>
+            `);
             return;
         }
 
         let html = '';
-        complaints.forEach(function(complaint) {
-            const problemType = complaint.ProblemType || complaint.problemType || 'Grievance';
-            const status = complaint.Status || complaint.status || 'Pending';
-            const address = complaint.Address || complaint.address || 'Nearby Location';
-            const id = complaint.ComplaintId || complaint.complaintId || complaint.id;
-            const distance = complaint.Distance || complaint.distance || 0;
-            const statusClass = status === 'Fixed' ? 'bg-success' : (status === 'InProgress' ? 'bg-warning text-dark' : 'bg-danger');
+        complaints.forEach(c => {
+            const type = c.ProblemType || c.problemType || 'Civic Issue';
+            const status = c.Status || c.status || 'Pending';
+            const address = c.Address || c.address || 'Nearby Location';
+            const id = c.ComplaintId || c.complaintId || c.id;
+            const distance = Math.round(c.Distance || c.distance || 0);
+
+            const statusClass = status === 'Fixed' ? 'status-pill--fixed' : 
+                               (status === 'InProgress' ? 'status-pill--inprogress' : 'status-pill--pending');
 
             html += `
-                <div class="card border rounded-3 p-3 mb-3 bg-light shadow-sm">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                            <span class="badge ${statusClass} rounded-pill px-2 py-1 small">${status}</span>
-                            <strong class="d-block text-dark mt-1">${problemType}</strong>
-                        </div>
-                        <span class="badge bg-white text-muted border small">${Math.round(distance)}m away</span>
+                <a href="/Complaint/Details/${id}" class="nearby-item-card">
+                    <div class="nearby-item-card__head">
+                        <span class="status-pill ${statusClass}">${status}</span>
+                        <span class="nearby-distance-chip">${distance > 0 ? distance + 'm away' : 'Near you'}</span>
                     </div>
-                    <p class="text-muted small mb-2 text-truncate">${address}</p>
-                    <a href="/Complaint/Details/${id}" class="btn btn-sm btn-outline-primary rounded-pill w-100">View Details</a>
-                </div>
+                    <strong class="text-dark d-block mb-1">${escapeHtml(type)}</strong>
+                    <div class="text-muted small text-truncate">
+                        <i class="fas fa-map-pin text-primary me-1" aria-hidden="true"></i>${escapeHtml(address)}
+                    </div>
+                </a>
             `;
         });
-        
+
         list.html(html);
     }
 
-    function displayComplaintsOnMap(complaints) {
-        if (!complaints) return;
-        
-        complaints.forEach(function(complaint) {
-            const lat = complaint.Latitude || complaint.latitude;
-            const lng = complaint.Longitude || complaint.longitude;
-            const type = complaint.ProblemType || complaint.problemType;
-            const status = complaint.Status || complaint.status;
-            const id = complaint.ComplaintId || complaint.complaintId || complaint.id;
+    function renderMapMarkers(complaints) {
+        // Clear previous markers
+        mapMarkers.forEach(m => map.removeLayer(m));
+        mapMarkers = [];
+
+        complaints.forEach(c => {
+            const lat = c.Latitude || c.latitude;
+            const lng = c.Longitude || c.longitude;
+            const type = c.ProblemType || c.problemType || 'Civic Issue';
+            const status = c.Status || c.status || 'Pending';
+            const id = c.ComplaintId || c.complaintId || c.id;
+            const address = c.Address || c.address || '';
 
             if (lat && lng) {
-                const color = status === 'Fixed' ? '#198754' : (status === 'InProgress' ? '#ffc107' : '#dc3545');
-                const icon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8]
+                const color = status === 'Fixed' ? '#10b981' : (status === 'InProgress' ? '#f59e0b' : '#ef4444');
+                const markerIcon = L.divIcon({
+                    className: 'nearby-map-marker',
+                    html: `<div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #ffffff; box-shadow: 0 3px 6px rgba(0,0,0,0.25);"></div>`,
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9]
                 });
 
-                const marker = L.marker([lat, lng], { icon: icon });
+                const marker = L.marker([lat, lng], { icon: markerIcon });
                 marker.bindPopup(`
-                    <div class="p-1">
-                        <h6>${type}</h6>
-                        <span class="badge" style="background-color:${color}">${status}</span>
-                        <div class="mt-2">
-                            <a href="/Complaint/Details/${id}" class="btn btn-sm btn-primary rounded-pill px-2 py-0">View</a>
-                        </div>
+                    <div style="font-family: var(--font-sans); padding: 4px;">
+                        <strong style="color: #0f172a; font-size: 0.9rem; display: block; margin-bottom: 4px;">${escapeHtml(type)}</strong>
+                        <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">${escapeHtml(address)}</p>
+                        <a href="/Complaint/Details/${id}" style="display: inline-block; padding: 4px 12px; background: #2563eb; color: #ffffff; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-decoration: none;">
+                            View Details & Proofs
+                        </a>
                     </div>
                 `);
                 marker.addTo(map);
+                mapMarkers.push(marker);
             }
         });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
     }
 </script>
 }

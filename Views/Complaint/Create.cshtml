@@ -1,212 +1,412 @@
 @{
-    ViewData["Title"] = "Report a Problem - JanSamadhan";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
+    ViewData["Title"] = "Report a Problem — JanSamadhan";
 }
 
-<div class="d-flex min-vh-100 bg-light citizen-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="citizen-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
-        <div>
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
-
-            <nav class="nav flex-column gap-1">
-                <a href="/Complaint" class="sidebar-link">
-                    <i class="fas fa-clipboard-list me-3"></i> My Complaints
-                </a>
-                <a href="/Complaint/Create" class="sidebar-link active">
-                    <i class="fas fa-plus-circle me-3"></i> Report an Issue
-                </a>
-                <a href="/Home/Nearby" class="sidebar-link">
-                    <i class="fas fa-map-marker-alt me-3"></i> Nearby Issues
-                </a>
-                <a href="/Badge" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> Badges & Rewards
-                </a>
-                <a href="/Home/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-trophy me-3"></i> Leaderboard
-                </a>
-            </nav>
-        </div>
-
-        <div class="pt-3 border-top">
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Complaint" class="btn btn-outline-secondary btn-sm rounded-pill px-3"><i class="fas fa-arrow-left me-1"></i> My Complaints</a>
-                <span class="text-muted">/</span>
-                <span class="fw-semibold text-dark">Report New Problem</span>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
-
-        <main class="p-4 flex-grow-1">
-            <div class="mb-4">
-                <h2 class="fw-bolder text-dark mb-1">Report a Civic Problem</h2>
-                <p class="text-muted mb-0 small">Pin the exact location on the map, choose the category, and upload a photo for automatic department routing.</p>
-            </div>
-
-            <form method="post" enctype="multipart/form-data">
-                <div class="row g-4">
-                    <!-- Form Input Column -->
-                    <div class="col-lg-6">
-                        <div class="card border rounded-4 shadow-sm bg-white p-4">
-                            <h5 class="fw-bold mb-3 text-dark">1. Issue Details</h5>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark small">Problem Category</label>
-                                <select class="form-select rounded-3" name="problemType" id="problemType" required>
-                                    <option value="">-- Select Problem Type --</option>
-                                    <option data-department="Public Works">Pothole</option>
-                                    <option data-department="Public Works">Streetlight</option>
-                                    <option data-department="Utilities">Water Disposal</option>
-                                    <option data-department="Traffic Management">Traffic Signal</option>
-                                    <option data-department="Utilities">Sewer Lids</option>
-                                    <option data-department="Public Works">Bridges</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3" id="departmentInfo" style="display: none;">
-                                <div class="alert alert-info py-2 px-3 rounded-3 small mb-0 d-flex align-items-center gap-2">
-                                    <i class="fas fa-route text-primary"></i>
-                                    <span>Auto-routing to: <strong id="assignedDepartment" class="text-dark"></strong></span>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark small">Description (Optional)</label>
-                                <textarea class="form-control rounded-3" name="description" rows="3" placeholder="Provide extra context (e.g. near landmark, depth, hazard)..."></textarea>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark small">Upload Photo Proof</label>
-                                <input class="form-control rounded-3" type="file" name="photo" accept="image/*" />
-                                <small class="text-muted">A clear on-site photo accelerates triage and dispatch.</small>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold text-dark small">Detected Street Address</label>
-                                <input class="form-control rounded-3 bg-light" type="text" id="address" name="address" placeholder="Click on the map to automatically detect address..." />
-                            </div>
-
-                            <input type="hidden" id="latitude" name="latitude" />
-                            <input type="hidden" id="longitude" name="longitude" />
-
-                            <button class="btn btn-primary w-100 py-2 fw-bold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" type="submit">
-                                <i class="fas fa-paper-plane"></i> Submit Grievance (+10 Pts)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Map Pin Column -->
-                    <div class="col-lg-6">
-                        <div class="card border rounded-4 shadow-sm bg-white p-3 h-100 d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                                <h5 class="fw-bold mb-0 text-dark">2. Tag Precise Location</h5>
-                                <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Click anywhere to drop pin</small>
-                            </div>
-                            <div id="map" class="flex-grow-1 rounded-3" style="min-height: 420px; border: 1px solid #e2e8f0;"></div>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </main>
-    </div>
+<div class="report-page-header">
+    <nav class="report-breadcrumbs" aria-label="Breadcrumb">
+        <a href="/Complaint"><i class="fas fa-clipboard-list me-1" aria-hidden="true"></i>My Complaints</a>
+        <span aria-hidden="true">/</span>
+        <span class="text-dark fw-semibold" aria-current="page">Report New Problem</span>
+    </nav>
+    <h1 class="report-title">Report a Civic Problem</h1>
+    <p class="report-subtitle">Pinpoint the exact location on the map, select the category, and upload photo proof for automatic municipal triage.</p>
 </div>
 
-<style>
-.citizen-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+<form method="post" action="/Complaint/Create" enctype="multipart/form-data" id="complaintForm" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div class="report-grid">
+        <!-- Left Column: Problem Details Form -->
+        <div class="report-form-col">
+            <div class="report-card">
+                <div class="report-section-title">
+                    <span class="report-section-number">1</span>
+                    <span>Issue Information</span>
+                </div>
+
+                <!-- Problem Category Quick-Select Grid -->
+                <div class="form-field-group">
+                    <label class="form-field-label" for="problemType">
+                        Problem Category <span class="text-danger">*</span>
+                    </label>
+
+                    <div class="category-grid" role="radiogroup" aria-label="Select Problem Category">
+                        <button type="button" class="category-tile" data-value="Pothole" data-department="Public Works" role="radio" aria-checked="false">
+                            <i class="fas fa-road" aria-hidden="true"></i>
+                            <span>Pothole</span>
+                        </button>
+                        <button type="button" class="category-tile" data-value="Streetlight" data-department="Public Works" role="radio" aria-checked="false">
+                            <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                            <span>Streetlight</span>
+                        </button>
+                        <button type="button" class="category-tile" data-value="Water Disposal" data-department="Utilities" role="radio" aria-checked="false">
+                            <i class="fas fa-faucet-drip" aria-hidden="true"></i>
+                            <span>Water Leak</span>
+                        </button>
+                        <button type="button" class="category-tile" data-value="Traffic Signal" data-department="Traffic Management" role="radio" aria-checked="false">
+                            <i class="fas fa-traffic-light" aria-hidden="true"></i>
+                            <span>Traffic Light</span>
+                        </button>
+                        <button type="button" class="category-tile" data-value="Sewer Lids" data-department="Utilities" role="radio" aria-checked="false">
+                            <i class="fas fa-circle-dot" aria-hidden="true"></i>
+                            <span>Sewer Lid</span>
+                        </button>
+                        <button type="button" class="category-tile" data-value="Bridges" data-department="Public Works" role="radio" aria-checked="false">
+                            <i class="fas fa-archway" aria-hidden="true"></i>
+                            <span>Bridge</span>
+                        </button>
+                    </div>
+
+                    <!-- Synchronized Select Field (preserves standard validation & binding) -->
+                    <select class="form-field-select" name="problemType" id="problemType" required>
+                        <option value="">-- Or choose from list --</option>
+                        <option data-department="Public Works" value="Pothole">Pothole</option>
+                        <option data-department="Public Works" value="Streetlight">Streetlight</option>
+                        <option data-department="Utilities" value="Water Disposal">Water Disposal</option>
+                        <option data-department="Traffic Management" value="Traffic Signal">Traffic Signal</option>
+                        <option data-department="Utilities" value="Sewer Lids">Sewer Lids</option>
+                        <option data-department="Public Works" value="Bridges">Bridges</option>
+                    </select>
+                </div>
+
+                <!-- Auto-Routing Department Banner -->
+                <div class="department-badge-box" id="departmentInfo" style="display: none;" role="status" aria-live="polite">
+                    <i class="fas fa-route" aria-hidden="true"></i>
+                    <div>
+                        <span class="d-block small text-muted">Intelligent Department Routing:</span>
+                        <strong id="assignedDepartment" class="text-dark">Public Works</strong>
+                    </div>
+                </div>
+
+                <!-- Description Input -->
+                <div class="form-field-group">
+                    <label class="form-field-label" for="description">
+                        Description <span class="text-muted fw-normal">(Optional context)</span>
+                    </label>
+                    <textarea class="form-field-textarea" 
+                              id="description" 
+                              name="description" 
+                              rows="3" 
+                              placeholder="Provide extra details (e.g. depth of pothole, pole serial number, safety hazards)..."></textarea>
+                </div>
+
+                <!-- Drag & Drop Photo Upload Zone -->
+                <div class="form-field-group">
+                    <label class="form-field-label">
+                        Photo Evidence <span class="text-muted fw-normal">(Speeds up dispatch)</span>
+                    </label>
+
+                    <div class="photo-dropzone" id="photoDropzone" tabindex="0" role="button" aria-label="Upload photo evidence">
+                        <i class="fas fa-cloud-arrow-up photo-dropzone__icon" aria-hidden="true"></i>
+                        <p class="photo-dropzone__title">Drag & drop your photo here, or browse</p>
+                        <p class="photo-dropzone__hint">Supports JPG, PNG, WebP up to 15MB</p>
+                        <input type="file" id="photo" name="photo" accept="image/*" class="visually-hidden" />
+                    </div>
+
+                    <!-- Live Image Preview Card -->
+                    <div class="photo-preview-card" id="photoPreviewCard" aria-live="polite">
+                        <div class="photo-preview-info">
+                            <img src="" id="photoPreviewImg" alt="Selected photo evidence thumbnail" class="photo-preview-thumb" />
+                            <div>
+                                <div class="photo-preview-name" id="photoPreviewName">photo.jpg</div>
+                                <span class="small text-muted" id="photoPreviewSize">0 KB</span>
+                            </div>
+                        </div>
+                        <button type="button" class="photo-remove-btn" id="photoRemoveBtn" aria-label="Remove photo">
+                            <i class="fas fa-trash-can" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detected Address Display Field -->
+                <div class="form-field-group">
+                    <label class="form-field-label" for="address">
+                        Incident Street Address <span class="text-danger">*</span>
+                    </label>
+                    <input class="form-field-input" 
+                           type="text" 
+                           id="address" 
+                           name="address" 
+                           placeholder="Pin location on map to detect address..." 
+                           required />
+                </div>
+
+                <!-- Hidden Latitude and Longitude Coordinates -->
+                <input type="hidden" id="latitude" name="latitude" required />
+                <input type="hidden" id="longitude" name="longitude" required />
+
+                <button type="submit" class="report-submit-btn" id="btnSubmitComplaint">
+                    <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                    <span>Submit Grievance (+10 Civic Pts)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Column: Sticky Interactive Map Picker -->
+        <div class="report-map-col">
+            <div class="map-sticky-wrapper">
+                <div class="map-card-container">
+                    <div class="map-card-header">
+                        <div>
+                            <h2 class="h6 fw-bold mb-0 text-dark">2. Tag Precise Location</h2>
+                            <small class="text-muted">Click anywhere to move the pin marker</small>
+                        </div>
+                        <span class="badge bg-light text-secondary border px-2 py-1">
+                            <i class="fas fa-map-pin me-1 text-primary" aria-hidden="true"></i>GIS Map
+                        </span>
+                    </div>
+
+                    <div id="map" class="map-canvas" role="region" aria-label="Interactive incident map"></div>
+
+                    <!-- Floating Locate Me Button -->
+                    <button type="button" 
+                            class="map-locate-btn" 
+                            id="btnLocateMe" 
+                            title="Center to my current GPS location" 
+                            aria-label="Use my current GPS location">
+                        <i class="fas fa-crosshairs" aria-hidden="true"></i>
+                    </button>
+
+                    <!-- Floating Address Resolution Status Pill -->
+                    <div class="map-status-pill" id="mapStatusPill">
+                        <i class="fas fa-circle-notch fa-spin" id="mapStatusSpinner" aria-hidden="true"></i>
+                        <span id="mapStatusText">Click map to set location</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-complaint.css" asp-append-version="true" />
 }
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-}
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-</style>
 
 @section Scripts {
 <script>
-    const map = L.map('map').setView([23.2599, 77.4126], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    document.addEventListener('DOMContentLoaded', function () {
+        // Default Coordinates: Bhopal Municipal Center
+        const defaultLat = 23.2599;
+        const defaultLng = 77.4126;
 
-    let marker = null;
-    function setMarker(lat, lng) {
-        if (marker) { map.removeLayer(marker); }
-        marker = L.marker([lat, lng]).addTo(map);
-        document.getElementById('latitude').value = lat;
-        document.getElementById('longitude').value = lng;
-        
-        document.getElementById('address').value = 'Detecting address...';
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-            .then(r => r.json())
-            .then(d => {
-                document.getElementById('address').value = d.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            }).catch(() => {
-                document.getElementById('address').value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        // Initialize Leaflet Map
+        const map = L.map('map', {
+            zoomControl: true,
+            scrollWheelZoom: true
+        }).setView([defaultLat, defaultLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = null;
+        const statusPill = document.getElementById('mapStatusPill');
+        const statusSpinner = document.getElementById('mapStatusSpinner');
+        const statusText = document.getElementById('mapStatusText');
+
+        // Custom High-Res Pulse SVG Pin Icon
+        function createCustomPin() {
+            return L.divIcon({
+                className: 'custom-map-pin',
+                iconSize: [40, 40],
+                iconAnchor: [20, 36],
+                html: `
+                    <div class="custom-map-pin__pulse"></div>
+                    <div class="custom-map-pin__icon"></div>
+                `
             });
-    }
-
-    map.on('click', function (e) {
-        setMarker(e.latlng.lat, e.latlng.lng);
-    });
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(p => {
-            const lat = p.coords.latitude;
-            const lng = p.coords.longitude;
-            map.setView([lat, lng], 15);
-            setMarker(lat, lng);
-        });
-    }
-
-    $('#problemType').change(function() {
-        const selectedOption = $(this).find('option:selected');
-        const department = selectedOption.data('department');
-        
-        if (department) {
-            $('#assignedDepartment').text(department);
-            $('#departmentInfo').show();
-        } else {
-            $('#departmentInfo').hide();
         }
+
+        // Set Marker and Reverse Geocode
+        function setMarker(lat, lng, panTo = false) {
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng], {
+                    icon: createCustomPin(),
+                    draggable: true
+                }).addTo(map);
+
+                marker.on('dragend', function (e) {
+                    const pos = e.target.getLatLng();
+                    setMarker(pos.lat, pos.lng, false);
+                });
+            }
+
+            if (panTo) {
+                map.panTo([lat, lng], { animate: true, duration: 0.5 });
+            }
+
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lng.toFixed(6);
+
+            // Reverse Geocoding Status
+            statusSpinner.style.display = 'inline-block';
+            statusText.textContent = 'Resolving address...';
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+                .then(r => r.json())
+                .then(d => {
+                    const resolved = d.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    document.getElementById('address').value = resolved;
+                    statusSpinner.style.display = 'none';
+                    statusText.textContent = 'Location pinned';
+                })
+                .catch(() => {
+                    const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    document.getElementById('address').value = fallback;
+                    statusSpinner.style.display = 'none';
+                    statusText.textContent = 'Coordinates saved';
+                });
+        }
+
+        // Click Map to Drop Pin
+        map.on('click', function (e) {
+            setMarker(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Current Location via Geolocation API
+        function locateUser() {
+            if (navigator.geolocation) {
+                statusSpinner.style.display = 'inline-block';
+                statusText.textContent = 'Locating GPS...';
+
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        map.setView([lat, lng], 16);
+                        setMarker(lat, lng);
+                    },
+                    err => {
+                        statusSpinner.style.display = 'none';
+                        statusText.textContent = 'GPS permission denied';
+                    },
+                    { enableHighAccuracy: true, timeout: 8000 }
+                );
+            }
+        }
+
+        document.getElementById('btnLocateMe').addEventListener('click', locateUser);
+
+        // Initial Location attempt
+        locateUser();
+
+        // Synchronize Category Tiles with Select Dropdown
+        const categoryTiles = document.querySelectorAll('.category-tile');
+        const selectProblemType = document.getElementById('problemType');
+        const deptInfo = document.getElementById('departmentInfo');
+        const deptText = document.getElementById('assignedDepartment');
+
+        categoryTiles.forEach(tile => {
+            tile.addEventListener('click', function () {
+                categoryTiles.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-checked', 'false');
+                });
+                this.classList.add('active');
+                this.setAttribute('aria-checked', 'true');
+
+                const val = this.getAttribute('data-value');
+                selectProblemType.value = val;
+                updateDepartment(this.getAttribute('data-department'));
+            });
+        });
+
+        selectProblemType.addEventListener('change', function () {
+            const selectedOpt = this.options[this.selectedIndex];
+            const dept = selectedOpt ? selectedOpt.getAttribute('data-department') : null;
+            
+            categoryTiles.forEach(t => {
+                if (t.getAttribute('data-value') === this.value) {
+                    t.classList.add('active');
+                    t.setAttribute('aria-checked', 'true');
+                } else {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-checked', 'false');
+                }
+            });
+
+            updateDepartment(dept);
+        });
+
+        function updateDepartment(dept) {
+            if (dept) {
+                deptText.textContent = dept;
+                deptInfo.style.display = 'flex';
+            } else {
+                deptInfo.style.display = 'none';
+            }
+        }
+
+        // Drag & Drop File Upload Handling
+        const dropzone = document.getElementById('photoDropzone');
+        const fileInput = document.getElementById('photo');
+        const previewCard = document.getElementById('photoPreviewCard');
+        const previewImg = document.getElementById('photoPreviewImg');
+        const previewName = document.getElementById('photoPreviewName');
+        const previewSize = document.getElementById('photoPreviewSize');
+        const removeBtn = document.getElementById('photoRemoveBtn');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        dropzone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+                handleFileSelect(this.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                if (window.showToast) {
+                    window.showToast('Please upload an image file (JPG, PNG, WebP).', 'warning');
+                } else {
+                    alert('Please upload an image file (JPG, PNG, WebP).');
+                }
+                return;
+            }
+
+            previewName.textContent = file.name;
+            previewSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                previewImg.src = e.target.result;
+                previewCard.classList.add('active');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        removeBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            previewImg.src = '';
+            previewCard.classList.remove('active');
+        });
     });
 </script>
 }

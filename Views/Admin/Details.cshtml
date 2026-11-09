@@ -1,478 +1,873 @@
 @model JanSamadhan.Models.Complaint
+@inject JanSamadhan.Data.ApplicationDbContext DbContext
+@using Microsoft.EntityFrameworkCore
 @{
-    ViewData["Title"] = "Complaint #" + Model.ComplaintId + " - Admin Details";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
+    ViewData["Title"] = $"Complaint #{Model.ComplaintId} — Dispatch & Triage";
+
+    var isFixed = Model.Status == JanSamadhan.Models.ComplaintStatus.Fixed;
+    var isInProgress = Model.Status == JanSamadhan.Models.ComplaintStatus.InProgress;
+    var isPending = Model.Status == JanSamadhan.Models.ComplaintStatus.Pending;
+
+    var statusClass = isFixed ? "fixed" : (isInProgress ? "inprogress" : "pending");
+
+    var citizenName = Model.User?.Name ?? "Anonymous Citizen";
+    var citizenInitial = string.IsNullOrWhiteSpace(citizenName) ? "C" : citizenName.Substring(0, 1).ToUpperInvariant();
+
+    // Server-side pre-fetch active departments and technicians to prevent layout shift
+    var activeDepartments = await DbContext.Departments.Where(d => d.IsActive).OrderBy(d => d.Name).ToListAsync();
+    var departmentTechs = Model.DepartmentId.HasValue 
+        ? await DbContext.Users.Where(u => u.Role == "Technician" && u.DepartmentId == Model.DepartmentId.Value).OrderBy(u => u.Name).ToListAsync()
+        : new List<JanSamadhan.Models.User>();
+
+    var hasPhotos = !string.IsNullOrEmpty(Model.PhotoPath) || (Model.TechnicianPhotos != null && Model.TechnicianPhotos.Any());
 }
 
-<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
-        <div>
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
+@section Styles {
+    <link rel="stylesheet" href="~/css/complaints.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/complaint-details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-details.css" asp-append-version="true" />
+}
 
-            <nav class="nav flex-column gap-1">
-                <a href="/Admin" class="sidebar-link active">
-                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
-                </a>
-                <a href="/Map/AdminMap" class="sidebar-link">
-                    <i class="fas fa-map-marked-alt me-3"></i> Map View
-                </a>
-                <a href="/Role" class="sidebar-link">
-                    <i class="fas fa-users-cog me-3"></i> Role Management
-                </a>
-                <a href="/Admin/TechnicianScoreboard" class="sidebar-link">
-                    <i class="fas fa-chart-line me-3"></i> Technician Board
-                </a>
-                <a href="/Admin/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> User Scoreboard
-                </a>
-            </nav>
+<!-- Breadcrumb & Header Row (Unified with Citizen Details) -->
+<div class="admin-details-header">
+    <div>
+        <nav class="admin-breadcrumb" aria-label="Breadcrumb">
+            <a href="/Admin"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Admin Dashboard</a>
+            <span aria-hidden="true">&sol;</span>
+            <span class="text-dark fw-semibold">Complaint #@Model.ComplaintId</span>
+        </nav>
+        <div class="admin-details-title-row">
+            <h1 class="admin-details-title">Complaint #@Model.ComplaintId: @Model.ProblemType</h1>
+            <span class="status-pill status-pill--@statusClass">@Model.Status</span>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+        <a href="@Url.Action("Export", "Admin", new { q = Model.ComplaintId.ToString(), format = "pdf" })" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-medium d-inline-flex align-items-center gap-1">
+            <i class="fas fa-file-pdf text-danger" aria-hidden="true"></i> <span>Export PDF</span>
+        </a>
+        <a href="/Admin" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-medium">
+            All Complaints &rarr;
+        </a>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="fas fa-circle-check me-2" aria-hidden="true"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- 4-Stage Horizontal Resolution Stepper -->
+<section class="stepper-card mb-4" aria-label="Grievance Lifecycle Resolution Stepper">
+    <div class="stepper-track">
+        <!-- Step 1: Reported -->
+        <div class="stepper-step is-complete">
+            <div class="stepper-node" aria-hidden="true">
+                <i class="fas fa-check"></i>
+            </div>
+            <span class="stepper-label">1. Reported</span>
+            <span class="stepper-sublabel">@Model.CreatedAt.ToLocalTime().ToString("MMM dd")</span>
         </div>
 
-        <div class="pt-3 border-top">
-            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
-                <i class="fas fa-user-plus"></i> + Add Technician
-            </a>
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-cog"></i> Settings
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+        <!-- Step 2: Routed & Assigned -->
+        <div class="stepper-step @(Model.DepartmentId.HasValue || isInProgress || isFixed ? "is-complete" : "is-active")">
+            <div class="stepper-node" aria-hidden="true">
+                @if (Model.DepartmentId.HasValue || isInProgress || isFixed)
+                {
+                    <i class="fas fa-check"></i>
+                }
+                else
+                {
+                    <span>2</span>
+                }
+            </div>
+            <span class="stepper-label">2. Routed</span>
+            <span class="stepper-sublabel">@(Model.Department != null ? Model.Department.Name : "Awaiting Triage")</span>
+        </div>
+
+        <!-- Step 3: In Field Repair -->
+        <div class="stepper-step @(isFixed ? "is-complete" : (isInProgress ? "is-active" : ""))">
+            <div class="stepper-node" aria-hidden="true">
+                @if (isFixed)
+                {
+                    <i class="fas fa-check"></i>
+                }
+                else if (isInProgress)
+                {
+                    <i class="fas fa-screwdriver-wrench"></i>
+                }
+                else
+                {
+                    <span>3</span>
+                }
+            </div>
+            <span class="stepper-label">3. In Field</span>
+            <span class="stepper-sublabel">@(Model.AssignedToUser != null ? Model.AssignedToUser.Name : "Not Assigned")</span>
+        </div>
+
+        <!-- Step 4: Resolved & Verified -->
+        <div class="stepper-step @(isFixed ? "is-complete" : "")">
+            <div class="stepper-node" aria-hidden="true">
+                @if (isFixed)
+                {
+                    <i class="fas fa-check-double"></i>
+                }
+                else
+                {
+                    <span>4</span>
+                }
+            </div>
+            <span class="stepper-label">4. Resolved</span>
+            <span class="stepper-sublabel">@(isFixed ? "Verified Fixed" : "Pending")</span>
+        </div>
+    </div>
+</section>
+
+<!-- 2-Column Responsive Layout -->
+<div class="admin-details-layout">
+    <!-- ================= LEFT COLUMN: GRIEVANCE INTEL & EVIDENCE ================= -->
+    <div class="admin-details-col">
+        <!-- 1. Core Grievance Info Card -->
+        <div class="admin-card">
+            <div class="admin-card__header">
+                <h2 class="admin-card__title">
+                    <i class="fas fa-file-lines text-primary" aria-hidden="true"></i>
+                    <span>Grievance Dossier</span>
+                </h2>
+                <span class="text-muted small">Submitted @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy · hh:mm tt")</span>
+            </div>
+            <div class="admin-card__body">
+                <div class="detail-kv-grid mb-3">
+                    <div class="detail-kv-item">
+                        <span class="detail-label">Problem Category</span>
+                        <p class="detail-value fw-semibold text-primary">
+                            <span class="category-pill">
+                                @Model.ProblemType
+                            </span>
+                        </p>
+                    </div>
+                    <div class="detail-kv-item">
+                        <span class="detail-label">Assigned Department</span>
+                        <p class="detail-value fw-semibold">
+                            @(Model.Department?.Name ?? "Unassigned")
+                        </p>
+                    </div>
+                    <div class="detail-kv-item">
+                        <span class="detail-label">Active Field Technician</span>
+                        <p class="detail-value fw-semibold">
+                            @(Model.AssignedToUser?.Name ?? "Unassigned")
+                        </p>
+                    </div>
+                    <div class="detail-kv-item">
+                        <span class="detail-label">Last Updated</span>
+                        <p class="detail-value text-muted">
+                            @(Model.UpdatedAt.HasValue ? Model.UpdatedAt.Value.ToLocalTime().ToString("g") : Model.CreatedAt.ToLocalTime().ToString("g"))
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <span class="detail-label">Reported Incident Location</span>
+                    <p class="detail-value fw-medium d-flex align-items-center gap-1">
+                        <i class="fas fa-location-dot text-danger" aria-hidden="true"></i>
+                        <span>@(string.IsNullOrWhiteSpace(Model.Address) ? "No formal address entered" : Model.Address)</span>
+                    </p>
+                </div>
+
+                <div>
+                    <span class="detail-label">Citizen Description</span>
+                    <div class="detail-description-box">
+                        @(string.IsNullOrWhiteSpace(Model.Description) ? "No detailed description was provided by the citizen." : Model.Description)
+                    </div>
+                </div>
             </div>
         </div>
-    </aside>
 
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <!-- Top Header Navigation Bar -->
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Admin" class="btn btn-outline-secondary btn-sm rounded-pill px-3"><i class="fas fa-arrow-left me-1"></i> Back to Dashboard</a>
-                <span class="text-muted">/</span>
-                <span class="fw-semibold text-dark">Complaint #@Model.ComplaintId</span>
+        <!-- 2. Evidence & Photo Gallery Card -->
+        <div class="admin-card">
+            <div class="admin-card__header">
+                <h2 class="admin-card__title">
+                    <i class="fas fa-camera text-primary" aria-hidden="true"></i>
+                    <span>Photographic Evidence</span>
+                </h2>
+                <span class="text-muted small">
+                    @(hasPhotos ? "Click any photo to inspect full resolution" : "No photos available")
+                </span>
             </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
-
-        <!-- Page Body Content -->
-        <main class="p-4 flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">Complaint Details #@Model.ComplaintId</h2>
-                    <p class="text-muted mb-0 small">Inspection, Triage, and Field Photo Validation</p>
-                </div>
-                <div>
-                    <span class="badge status-badge @(Model.Status.ToString().ToLower()) rounded-pill px-3 py-2 fs-6">
-                        Status: @Model.Status
-                    </span>
-                </div>
-            </div>
-
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
-
-            <div class="row g-4">
-                <!-- Left 8 Columns: Details & Comments -->
-                <div class="col-lg-8">
-                    <!-- Grievance Information Card -->
-                    <div class="card border rounded-4 shadow-sm mb-4 bg-white">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h5 class="fw-bold mb-0 text-dark">Grievance Information</h5>
-                        </div>
-                        <div class="card-body px-4 pb-4 pt-2">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="text-muted small fw-semibold">Problem Type</label>
-                                    <p class="fw-bold text-dark mb-2"><span class="badge bg-light text-dark border">@Model.ProblemType</span></p>
-                                    
-                                    <label class="text-muted small fw-semibold">Description</label>
-                                    <p class="text-dark mb-2">@(Model.Description ?? "No description provided")</p>
-                                    
-                                    <label class="text-muted small fw-semibold">Location / Address</label>
-                                    <p class="text-dark mb-1">@(Model.Address ?? "Address not specified")</p>
-                                    <small class="text-muted font-monospace"><i class="fas fa-map-pin me-1 text-danger"></i>@Model.Latitude, @Model.Longitude</small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small fw-semibold">Reported By</label>
-                                    <p class="fw-bold text-dark mb-2">@Model.User?.Name <span class="text-muted fw-normal">(@Model.User?.Email)</span></p>
-                                    
-                                    <label class="text-muted small fw-semibold">Submitted On</label>
-                                    <p class="text-dark mb-2">@Model.CreatedAt.ToLocalTime().ToString("f")</p>
-                                    
-                                    <label class="text-muted small fw-semibold">Department Assigned</label>
-                                    <p class="fw-semibold text-primary mb-2">@(Model.Department?.Name ?? "Unassigned")</p>
-                                    
-                                    <label class="text-muted small fw-semibold">Assigned Technician</label>
-                                    <p class="fw-semibold text-dark mb-0">@(Model.AssignedToUser?.Name ?? "Unassigned")</p>
+            <div class="admin-card__body">
+                @if (!hasPhotos)
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-image fa-2x mb-2 opacity-25" aria-hidden="true"></i>
+                        <p class="mb-0 small">No original or field photos attached to this record.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="photo-gallery-grid">
+                        @if (!string.IsNullOrEmpty(Model.PhotoPath))
+                        {
+                            <div class="photo-gallery-card" onclick="openLightbox('@Model.PhotoPath', 'Citizen Reported Defect')" title="Original Citizen Upload (Click to zoom)" role="button" tabindex="0">
+                                <span class="photo-gallery-card__badge photo-gallery-card__badge--citizen">
+                                    <i class="fas fa-user me-1" aria-hidden="true"></i> Citizen Report
+                                </span>
+                                <img src="@Model.PhotoPath" alt="Citizen reported problem photo" loading="lazy" />
+                                <div class="photo-zoom-hint">
+                                    <i class="fas fa-magnifying-glass-plus"></i> Zoom
                                 </div>
                             </div>
+                        }
 
-                            @if (!string.IsNullOrEmpty(Model.PhotoPath))
+                        @if (Model.TechnicianPhotos != null)
+                        {
+                            foreach (var photo in Model.TechnicianPhotos.OrderBy(p => p.UploadedAt))
                             {
-                                <div class="mt-3 border-top pt-3">
-                                    <label class="text-muted small fw-semibold d-block mb-2">Original Citizen Photo</label>
-                                    <img src="@Model.PhotoPath" class="img-fluid rounded-3 border shadow-sm" style="max-height: 260px;" alt="Complaint photo" />
+                                var isPhotoFixed = photo.PhotoType == "Fixed";
+                                var badgeClass = isPhotoFixed ? "photo-gallery-card__badge--fixed" : "photo-gallery-card__badge--wip";
+                                var badgeLabel = isPhotoFixed ? "Resolved Proof" : "In-Progress";
+
+                                <div class="photo-gallery-card" onclick="openLightbox('@photo.PhotoPath', '@(isPhotoFixed ? "Resolved Proof Photo" : "In-Progress Inspection Photo")')" title="Field Proof by Technician (Click to zoom)" role="button" tabindex="0">
+                                    <span class="photo-gallery-card__badge @badgeClass">
+                                        <i class="fas @(isPhotoFixed ? "fa-circle-check" : "fa-screwdriver-wrench") me-1" aria-hidden="true"></i>
+                                        @badgeLabel
+                                    </span>
+                                    <img src="@photo.PhotoPath" alt="@photo.PhotoType proof photo" loading="lazy" />
+                                    <div class="photo-zoom-hint">
+                                        <i class="fas fa-magnifying-glass-plus"></i> Zoom
+                                    </div>
                                 </div>
                             }
-                        </div>
+                        }
                     </div>
+                }
+            </div>
+        </div>
 
-                    <!-- Threaded Comments & Discussion Card -->
-                    <div class="card border rounded-4 shadow-sm bg-white mb-4">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-comments me-2 text-primary"></i>Audit Trail & Comments</h5>
+        <!-- 3. Incident Location Mini-Map Card -->
+        <div class="admin-card">
+            <div class="admin-card__header">
+                <h2 class="admin-card__title">
+                    <i class="fas fa-map-location-dot text-primary" aria-hidden="true"></i>
+                    <span>Geographic Pinpoint</span>
+                </h2>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-muted font-monospace border small">
+                        @Model.Latitude.ToString("F5"), @Model.Longitude.ToString("F5")
+                    </span>
+                    <a href="https://maps.google.com/?q=@Model.Latitude,@Model.Longitude" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0" title="Open in Google Maps">
+                        <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="admin-card__body p-0">
+                <div id="complaintMap" class="detail-map-canvas" role="region" aria-label="Incident Pinpoint Map"></div>
+            </div>
+        </div>
+
+        <!-- 4. Citizen Reporter Card -->
+        <div class="admin-card">
+            <div class="admin-card__header">
+                <h2 class="admin-card__title">
+                    <i class="fas fa-address-card text-primary" aria-hidden="true"></i>
+                    <span>Citizen Reporter Contact</span>
+                </h2>
+                <span class="badge bg-light text-muted border text-xs">@(Model.User?.Role ?? "Citizen")</span>
+            </div>
+            <div class="admin-card__body">
+                <div class="citizen-profile-item">
+                    <div class="citizen-avatar" aria-hidden="true">@citizenInitial</div>
+                    <div class="citizen-info">
+                        <div class="citizen-info__name">@citizenName</div>
+                        <div class="citizen-info__email">
+                            <i class="fas fa-envelope text-muted me-1" aria-hidden="true"></i>
+                            <a href="mailto:@(Model.User?.Email)" class="text-decoration-none text-muted">@(Model.User?.Email ?? "No email recorded")</a>
                         </div>
-                        <div class="card-body px-4 pb-4">
-                            <!-- Add Comment Form -->
-                            <div class="p-3 bg-light rounded-3 border mb-4">
-                                <h6 class="fw-bold text-dark mb-2">Post an Update or Internal Note</h6>
-                                <form id="commentForm" enctype="multipart/form-data">
-                                    <input type="hidden" id="complaintId" value="@Model.ComplaintId" />
-                                    <div class="mb-3">
-                                        <textarea class="form-control rounded-3" id="commentContent" rows="3" placeholder="Enter status update or comment..." maxlength="1000" required></textarea>
-                                    </div>
-                                    
-                                    <div class="row align-items-center mb-3 g-2">
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="visibleToUser" checked>
-                                                <label class="form-check-label small fw-semibold text-dark" for="visibleToUser">
-                                                    Visible to Citizen & Public
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="file" class="form-control form-control-sm" id="attachments" multiple accept="image/*,.pdf">
-                                        </div>
-                                    </div>
-                                    
-                                    <button type="submit" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold">
-                                        <i class="fas fa-paper-plane me-1"></i> Post Comment
-                                    </button>
-                                </form>
-                            </div>
-
-                            <!-- Comments Stream -->
-                            <div id="commentsList" class="d-flex flex-column gap-3">
-                                <!-- Loaded via AJAX -->
-                            </div>
+                        <div class="text-muted small mt-1">
+                            <i class="fas fa-medal text-warning me-1" aria-hidden="true"></i>
+                            Level: <strong class="text-dark">@(Model.User?.BadgeLevel ?? "Bronze")</strong> &middot; @(Model.User?.Points ?? 0) Civic Points
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Right 4 Columns: Actions, Photos & Ratings -->
-                <div class="col-lg-4">
-                    <!-- Admin Quick Actions Card -->
-                    <div class="card border rounded-4 shadow-sm mb-4 bg-white">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h6 class="fw-bold mb-0 text-dark">Admin Dispatch Actions</h6>
+        <!-- 5. Audit Trail & Discussion Timeline Card -->
+        <div class="admin-card">
+            <div class="admin-card__header">
+                <h2 class="admin-card__title">
+                    <i class="fas fa-clock-rotate-left text-primary" aria-hidden="true"></i>
+                    <span>Audit Trail &amp; Timeline</span>
+                </h2>
+                <span class="text-muted small" id="commentsCountBadge">Live Activity Stream</span>
+            </div>
+            <div class="admin-card__body">
+                <!-- Post Internal Update / Public Comment Form -->
+                <div class="bg-slate-50 border rounded-3 p-3 mb-4">
+                    <h3 class="h6 fw-bold text-dark mb-2">Record Dispatch Note or Public Update</h3>
+                    <form id="commentForm" enctype="multipart/form-data">
+                        <input type="hidden" id="complaintId" value="@Model.ComplaintId" />
+                        <div class="mb-3">
+                            <textarea class="form-control rounded-3" id="commentContent" rows="3" placeholder="Enter status update, field note, or public reply..." maxlength="1000" required></textarea>
                         </div>
-                        <div class="card-body px-4 pb-4 pt-2">
-                            <div class="d-grid gap-2">
-                                @if (Model.Status == JanSamadhan.Models.ComplaintStatus.Pending)
-                                {
-                                    <button class="btn btn-warning fw-bold text-dark rounded-3" onclick="updateStatus(@Model.ComplaintId, 1)">
-                                        <i class="fas fa-play me-1"></i> Mark In Progress
-                                    </button>
-                                }
-                                @if (Model.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
-                                {
-                                    <button class="btn btn-success fw-bold rounded-3" onclick="updateStatus(@Model.ComplaintId, 2)">
-                                        <i class="fas fa-check-double me-1"></i> Mark as Fixed
-                                    </button>
-                                }
-                                <button class="btn btn-primary fw-semibold rounded-3" onclick="showAssignmentModal()">
-                                    <i class="fas fa-user-tag me-1"></i> Assign Technician
+                        
+                        <div class="row align-items-center g-2 mb-3">
+                            <div class="col-sm-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="visibleToUser" checked>
+                                    <label class="form-check-label small fw-semibold text-dark" for="visibleToUser">
+                                        Visible to citizen &amp; public
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block text-xs">Uncheck to log as an internal admin-only audit note.</small>
+                            </div>
+                            <div class="col-sm-6">
+                                <input type="file" class="form-control form-control-sm rounded-3" id="attachments" multiple accept="image/*,.pdf" title="Attach photos or PDF documentation">
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" id="submitCommentBtn" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold d-inline-flex align-items-center gap-1">
+                                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                                <span>Post Note</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Timeline Stream List -->
+                <div id="commentsList" class="timeline-stream" role="feed" aria-label="Complaint audit stream">
+                    <div class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                        <p class="mb-0 small">Loading timeline entries...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= RIGHT COLUMN: ADMIN DISPATCH ACTIONS ================= -->
+    <div class="admin-details-col">
+        <div class="admin-sticky-sidebar">
+            <!-- 1. Triage & Dispatch Action Card -->
+            <div class="admin-card mb-4">
+                <div class="admin-card__header d-flex align-items-center justify-content-between">
+                    <h2 class="admin-card__title">
+                        <i class="fas fa-sliders text-primary" aria-hidden="true"></i>
+                        <span>Admin Dispatch &amp; Triage</span>
+                    </h2>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-1 text-xs">Priority Desk</span>
+                </div>
+                <div class="admin-card__body">
+                    <!-- A. Status Transition Display -->
+                    <div class="mb-4 pb-3 border-bottom">
+                        <span class="detail-label d-block mb-2">Operational Status</span>
+                        
+                        @if (isPending)
+                        {
+                            <div class="status-action-btn-group">
+                                <button type="button" class="status-btn status-btn--inprogress" onclick="executeStatusUpdate(@Model.ComplaintId, 1)">
+                                    <i class="fas fa-play" aria-hidden="true"></i> Move to In Progress
+                                </button>
+                                <button type="button" class="status-btn status-btn--fixed" onclick="executeStatusUpdate(@Model.ComplaintId, 2)">
+                                    <i class="fas fa-circle-check" aria-hidden="true"></i> Resolve Directly
                                 </button>
                             </div>
-                        </div>
+                            <small class="text-muted d-block mt-2 text-xs">
+                                Awaiting initial department triage or field assignment.
+                            </small>
+                        }
+                        else if (isInProgress)
+                        {
+                            <div class="status-action-btn-group">
+                                <button type="button" class="status-btn status-btn--fixed w-100" onclick="executeStatusUpdate(@Model.ComplaintId, 2)">
+                                    <i class="fas fa-check-double" aria-hidden="true"></i> Mark as Fixed &amp; Resolved
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2 text-xs">
+                                Complaint is currently active with field operations.
+                            </small>
+                        }
+                        else
+                        {
+                            <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 mb-2">
+                                <div class="d-flex align-items-center gap-2 text-success fw-bold">
+                                    <i class="fas fa-circle-check fa-lg" aria-hidden="true"></i>
+                                    <span>Resolution Verified &amp; Closed</span>
+                                </div>
+                                <p class="small text-muted mb-0 mt-1">This grievance ticket has successfully completed its resolution lifecycle.</p>
+                            </div>
+                        }
                     </div>
 
-                    <!-- Technician Uploaded Proofs -->
-                    @if (Model.TechnicianPhotos != null && Model.TechnicianPhotos.Any())
-                    {
-                        <div class="card border-info rounded-4 shadow-sm mb-4 bg-white">
-                            <div class="card-header bg-info bg-opacity-25 border-0 pt-3 px-4">
-                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-camera me-2"></i>Technician Field Proofs</h6>
-                            </div>
-                            <div class="card-body px-4 pb-3">
-                                @foreach (var photo in Model.TechnicianPhotos.OrderBy(p => p.UploadedAt))
-                                {
-                                    <div class="mb-3 border-bottom pb-2">
-                                        <span class="badge @(photo.PhotoType == "WorkInProgress" ? "bg-warning text-dark" : "bg-success") mb-1">
-                                            @(photo.PhotoType == "WorkInProgress" ? "Work In Progress" : "Fixed / Completed")
-                                        </span>
-                                        <img src="@photo.PhotoPath" class="img-fluid rounded-3 border d-block my-2" style="max-height: 180px;" alt="@photo.PhotoType Photo">
-                                        <small class="text-muted">Uploaded: @photo.UploadedAt.ToLocalTime().ToString("g")</small>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    <!-- User Rating Card -->
-                    @if (Model.Rating != null)
-                    {
-                        <div class="card border rounded-4 shadow-sm mb-4 bg-white">
-                            <div class="card-header bg-white border-0 pt-3 px-4">
-                                <h6 class="fw-bold mb-0 text-dark">Citizen Feedback & Rating</h6>
-                            </div>
-                            <div class="card-body px-4 pb-4 pt-2">
-                                <div class="rating-display text-warning fs-4 mb-2">
-                                    @for (int i = 1; i <= 5; i++)
-                                    {
-                                        <span class="star-display @(i <= Model.Rating.Score ? "filled" : "")">★</span>
-                                    }
-                                    <span class="ms-2 fs-6 text-dark fw-bold">@Model.Rating.Score / 5</span>
+                    <!-- B. Department & Technician Routing Form -->
+                    <div>
+                        <span class="detail-label d-block mb-2">Department &amp; Field Routing</span>
+                        @if (isFixed)
+                        {
+                            <div class="mb-3 p-3 bg-slate-50 border rounded-3 small">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Assigned Department:</span>
+                                    <strong class="text-dark">@(Model.Department?.Name ?? "Public Works")</strong>
                                 </div>
-                                @if (!string.IsNullOrEmpty(Model.Rating.Comment))
-                                {
-                                    <p class="text-muted small mb-0 fst-italic">"@Model.Rating.Comment"</p>
-                                }
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Assigned Technician:</span>
+                                    <strong class="text-dark">@(Model.AssignedToUser?.Name ?? "Field Technician")</strong>
+                                </div>
                             </div>
-                        </div>
-                    }
+
+                            <details class="mb-3">
+                                <summary class="text-muted small fw-semibold py-1" style="cursor: pointer;">
+                                    <i class="fas fa-arrows-rotate me-1 text-primary"></i> Reassign or Update Dispatch
+                                </summary>
+                                <div class="pt-3">
+                                    <form id="inlineAssignmentForm">
+                                        <input type="hidden" id="assignComplaintId" value="@Model.ComplaintId" />
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold text-muted mb-1" for="assignDepartment">Target Department</label>
+                                            <select id="assignDepartment" class="form-select rounded-3">
+                                                <option value="">-- Select Department --</option>
+                                                @foreach (var dept in activeDepartments)
+                                                {
+                                                    <option value="@dept.DepartmentId" selected="@(Model.DepartmentId == dept.DepartmentId)">
+                                                        @dept.Name
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold text-muted mb-1" for="assignTechnician">Assigned Technician</label>
+                                            <select id="assignTechnician" class="form-select rounded-3">
+                                                <option value="">-- Select Field Technician --</option>
+                                                @foreach (var tech in departmentTechs)
+                                                {
+                                                    <option value="@tech.UserId" selected="@(Model.AssignedToUserId == tech.UserId)">
+                                                        @tech.Name (@tech.Email)
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold text-muted mb-1" for="assignNote">Dispatch Note</label>
+                                            <textarea id="assignNote" class="form-control rounded-3" rows="2" placeholder="Reassignment reason or priority note..."></textarea>
+                                        </div>
+
+                                        <button type="button" id="btnSaveAssignment" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="saveAssignment()">
+                                            <i class="fas fa-truck-fast" aria-hidden="true"></i>
+                                            <span>Update Assignment</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </details>
+                        }
+                        else
+                        {
+                            <form id="inlineAssignmentForm">
+                                <input type="hidden" id="assignComplaintId" value="@Model.ComplaintId" />
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted mb-1" for="assignDepartment">Target Department</label>
+                                    <select id="assignDepartment" class="form-select rounded-3">
+                                        <option value="">-- Select Department --</option>
+                                        @foreach (var dept in activeDepartments)
+                                        {
+                                            <option value="@dept.DepartmentId" selected="@(Model.DepartmentId == dept.DepartmentId)">
+                                                @dept.Name
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted mb-1" for="assignTechnician">Assigned Technician</label>
+                                    <select id="assignTechnician" class="form-select rounded-3">
+                                        <option value="">-- Select Field Technician --</option>
+                                        @foreach (var tech in departmentTechs)
+                                        {
+                                            <option value="@tech.UserId" selected="@(Model.AssignedToUserId == tech.UserId)">
+                                                @tech.Name (@tech.Email)
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted mb-1" for="assignNote">Dispatch Instructions Note</label>
+                                    <textarea id="assignNote" class="form-control rounded-3" rows="3" placeholder="Add specific routing instructions or priority details for field technicians..."></textarea>
+                                </div>
+
+                                <button type="button" id="btnSaveAssignment" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="saveAssignment()">
+                                    <i class="fas fa-truck-fast" aria-hidden="true"></i>
+                                    <span>Save &amp; Dispatch Work Order</span>
+                                </button>
+                            </form>
+                        }
+                    </div>
                 </div>
             </div>
-        </main>
-    </div>
-</div>
 
-<!-- Assignment Modal -->
-<div class="modal fade" id="assignmentModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Assign Complaint to Technician</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="assignmentForm">
-                    <input type="hidden" id="assignmentComplaintId" value="@Model.ComplaintId" />
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Select Department</label>
-                        <select class="form-select rounded-3" id="departmentId">
-                            <option value="">Select Department</option>
-                        </select>
+            <!-- 2. Citizen Satisfaction & Rating Card (if rated) -->
+            @if (Model.Rating != null)
+            {
+                <div class="admin-card mb-4 border-warning">
+                    <div class="admin-card__header bg-warning bg-opacity-10">
+                        <h2 class="admin-card__title text-dark">
+                            <i class="fas fa-star text-warning" aria-hidden="true"></i>
+                            <span>Citizen Satisfaction Score</span>
+                        </h2>
+                        <span class="badge bg-warning text-dark fw-bold">Verified Feedback</span>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Assign to Field Technician</label>
-                        <select class="form-select rounded-3" id="assignedToUserId">
-                            <option value="">Select Technician</option>
-                        </select>
+                    <div class="admin-card__body">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div class="star-display">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span class="star-display @(i <= Model.Rating.Score ? "filled" : "")">&#9733;</span>
+                                }
+                            </div>
+                            <span class="fs-5 fw-extrabold text-dark">@Model.Rating.Score / 5</span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Rating.Comment))
+                        {
+                            <div class="detail-description-box mt-2 fst-italic">
+                                &ldquo;@Model.Rating.Comment&rdquo;
+                            </div>
+                        }
+                        <small class="text-muted d-block mt-2">
+                            Submitted on @Model.Rating.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                        </small>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Internal Instruction Note</label>
-                        <textarea class="form-control rounded-3" id="assignmentNote" rows="3" placeholder="Add dispatch instructions..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4" onclick="submitAssignment()">Assign & Dispatch</button>
-            </div>
+                </div>
+            }
         </div>
     </div>
 </div>
 
-<style>
-.admin-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-}
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-}
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-.status-badge.pending { background-color: #dc3545 !important; color: #fff; }
-.status-badge.inprogress { background-color: #ffc107 !important; color: #000; }
-.status-badge.fixed { background-color: #198754 !important; color: #fff; }
-.star-display { color: #cbd5e1; }
-.star-display.filled { color: #f59e0b; }
-</style>
+<!-- In-Page Apple Frosted Lightbox Modal -->
+<div id="adminLightboxModal" class="modal fade" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(8px); background: rgba(15, 23, 42, 0.7);">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px);">
+            <div class="modal-header border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title fw-bold text-dark fs-6 d-flex align-items-center gap-2" id="adminLightboxTitle">
+                    <i class="fas fa-camera text-primary"></i>
+                    <span>Photo Inspection</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-2 text-center bg-black bg-opacity-5">
+                <img id="adminLightboxImg" src="" alt="Full resolution evidence" class="img-fluid rounded-3" style="max-height: 75vh; object-fit: contain; width: 100%;" />
+            </div>
+            <div class="modal-footer border-top py-2 px-4 justify-content-between">
+                <span class="text-muted small">High-Resolution Photographic Dossier</span>
+                <a id="adminLightboxDirectLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                    <i class="fas fa-arrow-up-right-from-square me-1"></i> Open Raw
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
 <script>
-    $(document).ready(function() {
-        loadComments();
-        loadDepartments();
-        
-        $('#commentForm').submit(function(e) {
-            e.preventDefault();
-            submitComment();
-        });
-    });
-    
-    function loadComments() {
-        $.get('/Comment/GetComments', { complaintId: @Model.ComplaintId })
-            .done(function(response) {
-                if (response.success) {
-                    displayComments(response.comments);
-                }
+    document.addEventListener('DOMContentLoaded', function () {
+        initPinpointMap();
+        loadTimelineComments();
+        setupDepartmentChangeListener();
+
+        // Wire comment form submit
+        const commentForm = document.getElementById('commentForm');
+        if (commentForm) {
+            commentForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                submitTimelineComment();
             });
+        }
+    });
+
+    // 1. Lightbox Trigger
+    function openLightbox(url, title) {
+        if (!url) return;
+        document.getElementById('adminLightboxImg').src = url;
+        document.getElementById('adminLightboxTitle').innerHTML = '<i class="fas fa-camera text-primary"></i> <span>' + (title || 'Photo Inspection') + '</span>';
+        document.getElementById('adminLightboxDirectLink').href = url;
+        const modal = new bootstrap.Modal(document.getElementById('adminLightboxModal'));
+        modal.show();
     }
-    
-    function displayComments(comments) {
-        const commentsList = $('#commentsList');
-        commentsList.empty();
-        
-        if (comments.length === 0) {
-            commentsList.append('<p class="text-muted small text-center py-3">No comments or updates yet.</p>');
+
+    // 2. Initialize Leaflet Pinpoint Map
+    function initPinpointMap() {
+        const lat = @Model.Latitude;
+        const lng = @Model.Longitude;
+
+        if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
             return;
         }
-        
-        comments.forEach(function(comment) {
-            const isInternal = !comment.visibleToUser;
-            const roleBadge = comment.authorRole === 'User' ? 'bg-secondary' : 'bg-primary';
-            
-            commentsList.append(`
-                <div class="card border rounded-3 p-3 bg-white shadow-sm">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge ${roleBadge} rounded-pill">${comment.authorRole}</span>
-                            <strong class="text-dark small">${comment.authorName}</strong>
-                            ${isInternal ? '<span class="badge bg-warning text-dark rounded-pill small">Internal</span>' : ''}
+
+        const map = L.map('complaintMap', {
+            zoomControl: true,
+            scrollWheelZoom: false
+        }).setView([lat, lng], 15);
+
+        // OpenStreetMap Free & Reliable Tile Server (No API Key Required)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const customPinIcon = L.divIcon({
+            className: 'custom-leaflet-pin',
+            html: `
+                <div style="
+                    width: 34px;
+                    height: 34px;
+                    background: #2563eb;
+                    border: 3px solid #ffffff;
+                    border-radius: 50%;
+                    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #ffffff;
+                    font-size: 15px;
+                ">
+                    <i class="fas fa-location-dot"></i>
+                </div>
+            `,
+            iconSize: [34, 34],
+            iconAnchor: [17, 17]
+        });
+
+        const marker = L.marker([lat, lng], { icon: customPinIcon }).addTo(map);
+        marker.bindPopup(`
+            <div style="font-family: inherit; font-size: 13px; line-height: 1.4;">
+                <strong style="color: #0f172a;">@Model.ProblemType</strong>
+                <p style="margin: 4px 0 0 0; color: #64748b;">@(Model.Address ?? "Reported Pinpoint")</p>
+            </div>
+        `).openPopup();
+
+        setTimeout(function () {
+            map.invalidateSize();
+        }, 250);
+
+        window.addEventListener('resize', function () {
+            map.invalidateSize();
+        });
+    }
+
+    // 3. Load Timeline Comments
+    function loadTimelineComments() {
+        $.get('/Comment/GetComments', { complaintId: @Model.ComplaintId })
+            .done(function (response) {
+                if (response.success) {
+                    renderTimelineComments(response.comments);
+                }
+            })
+            .fail(function () {
+                $('#commentsList').html('<p class="text-danger small text-center py-3">Could not load comments stream.</p>');
+            });
+    }
+
+    function renderTimelineComments(comments) {
+        const container = $('#commentsList');
+        container.empty();
+
+        if (!comments || comments.length === 0) {
+            container.append(`
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-comments fa-2x mb-2 opacity-25" aria-hidden="true"></i>
+                    <p class="mb-0 small">No audit notes or comments posted yet.</p>
+                </div>
+            `);
+            $('#commentsCountBadge').text('0 entries');
+            return;
+        }
+
+        $('#commentsCountBadge').text(`${comments.length} ${comments.length === 1 ? 'entry' : 'entries'}`);
+
+        comments.forEach(function (c) {
+            const isInternal = !c.visibleToUser;
+            const role = (c.authorRole || 'User').toLowerCase();
+            const avatarClass = role === 'admin' ? 'timeline-entry__avatar--admin' : (role === 'technician' ? 'timeline-entry__avatar--technician' : '');
+            const initial = c.authorName ? c.authorName.charAt(0).toUpperCase() : 'U';
+            const bubbleClass = isInternal ? 'timeline-entry__bubble--internal' : '';
+
+            let attachmentHtml = '';
+            if (c.attachments && c.attachments.length > 0) {
+                attachmentHtml = '<div class="timeline-attachment-grid">';
+                c.attachments.forEach(function (att) {
+                    const isImg = att.contentType && att.contentType.startsWith('image/');
+                    if (isImg) {
+                        attachmentHtml += `
+                            <a href="${att.filePath}" target="_blank" rel="noopener noreferrer" class="timeline-attachment-pill">
+                                <i class="fas fa-image text-primary" aria-hidden="true"></i>
+                                <span>${att.fileName || 'Photo'}</span>
+                            </a>
+                        `;
+                    } else {
+                        attachmentHtml += `
+                            <a href="${att.filePath}" target="_blank" rel="noopener noreferrer" class="timeline-attachment-pill">
+                                <i class="fas fa-file-pdf text-danger" aria-hidden="true"></i>
+                                <span>${att.fileName || 'Document'}</span>
+                            </a>
+                        `;
+                    }
+                });
+                attachmentHtml += '</div>';
+            }
+
+            container.append(`
+                <div class="timeline-entry" role="article">
+                    <div class="timeline-entry__avatar ${avatarClass}" aria-hidden="true">${initial}</div>
+                    <div class="timeline-entry__bubble ${bubbleClass}">
+                        <div class="timeline-entry__meta">
+                            <div class="timeline-entry__author">
+                                <span class="fw-bold">${c.authorName || 'Staff'}</span>
+                                <span class="badge bg-light text-muted border text-xs">${c.authorRole || 'User'}</span>
+                                ${isInternal ? '<span class="badge bg-warning text-dark text-xs"><i class="fas fa-lock me-1"></i>Internal Note</span>' : ''}
+                            </div>
+                            <span class="timeline-entry__time">${new Date(c.createdAt).toLocaleString()}</span>
                         </div>
-                        <small class="text-muted">${new Date(comment.createdAt).toLocaleString()}</small>
+                        <div class="timeline-entry__content">${escapeHtml(c.content)}</div>
+                        ${attachmentHtml}
                     </div>
-                    <p class="mb-2 text-dark small">${comment.content}</p>
-                    ${comment.attachments && comment.attachments.length > 0 ? displayAttachments(comment.attachments) : ''}
                 </div>
             `);
         });
     }
-    
-    function displayAttachments(attachments) {
-        let html = '<div class="mt-2 d-flex flex-wrap gap-2">';
-        attachments.forEach(function(attachment) {
-            if (attachment.contentType && attachment.contentType.startsWith('image/')) {
-                html += `<a href="${attachment.filePath}" target="_blank">
-                    <img src="${attachment.filePath}" style="max-height: 80px;" class="img-thumbnail rounded" />
-                </a>`;
-            } else {
-                html += `<a href="${attachment.filePath}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-file me-1"></i> ${attachment.fileName}
-                </a>`;
-            }
-        });
-        html += '</div>';
-        return html;
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
-    
-    function submitComment() {
+
+    // 4. Submit Timeline Comment
+    function submitTimelineComment() {
+        const content = $('#commentContent').val().trim();
+        if (!content) return;
+
+        const btn = $('#submitCommentBtn');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status"></span> Posting...');
+
         const formData = new FormData();
         formData.append('complaintId', $('#complaintId').val());
-        formData.append('content', $('#commentContent').val());
+        formData.append('content', content);
         formData.append('visibleToUser', $('#visibleToUser').is(':checked'));
-        
-        const attachments = $('#attachments')[0].files;
-        for (let i = 0; i < attachments.length; i++) {
-            formData.append('attachments', attachments[i]);
+
+        const files = $('#attachments')[0].files;
+        for (let i = 0; i < files.length; i++) {
+            formData.append('attachments', files[i]);
         }
-        
+
         $.ajax({
             url: '/Comment/Create',
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
-            success: function(response) {
+            success: function (response) {
+                btn.prop('disabled', false).html('<i class="fas fa-paper-plane" aria-hidden="true"></i> Post Note');
                 if (response.success) {
                     $('#commentContent').val('');
                     $('#attachments').val('');
-                    loadComments();
+                    window.showToast('Note posted successfully.', 'success');
+                    loadTimelineComments();
                 } else {
-                    alert('Error: ' + response.message);
+                    window.showToast(response.message || 'Error posting comment.', 'error');
                 }
+            },
+            error: function () {
+                btn.prop('disabled', false).html('<i class="fas fa-paper-plane" aria-hidden="true"></i> Post Note');
+                window.showToast('Server error occurred while submitting note.', 'error');
             }
         });
     }
-    
-    function updateStatus(complaintId, status) {
-        $.post('/Admin/UpdateStatus', { id: complaintId, status: status })
-            .done(function() {
-                location.reload();
-            });
-    }
-    
-    function showAssignmentModal() {
-        $('#assignmentModal').modal('show');
-    }
-    
-    function loadDepartments() {
-        $.get('/Role/GetDepartments', function(departments) {
-            const select = $('#departmentId');
-            select.empty();
-            select.append('<option value="">Select Department</option>');
-            departments.forEach(dept => {
-                select.append(`<option value="${dept.departmentId}">${dept.name}</option>`);
-            });
-        });
-        
-        $('#departmentId').change(function() {
-            loadTechnicians($(this).val());
-        });
-    }
-    
-    function loadTechnicians(departmentId) {
-        if (!departmentId) {
-            $('#assignedToUserId').html('<option value="">Select Technician</option>');
+
+    // 5. Status Transition Execution
+    function executeStatusUpdate(complaintId, status) {
+        if (!confirm('Are you sure you want to transition this complaint status?')) {
             return;
         }
-        
-        $.get('/Admin/GetTechniciansByDepartment', { departmentId: departmentId })
-            .done(function(technicians) {
-                const select = $('#assignedToUserId');
-                select.html('<option value="">Select Technician</option>');
-                
-                technicians.forEach(tech => {
-                    select.append(`<option value="${tech.userId}">${tech.name} (${tech.email})</option>`);
-                });
+
+        $.post('/Admin/UpdateStatus', { id: complaintId, status: status })
+            .done(function () {
+                window.showToast('Status updated successfully.', 'success');
+                setTimeout(() => window.location.reload(), 300);
+            })
+            .fail(function () {
+                window.showToast('Could not update status. Please verify permissions.', 'error');
             });
     }
-    
-    function submitAssignment() {
-        const formData = {
-            id: $('#assignmentComplaintId').val(),
-            departmentId: $('#departmentId').val() || null,
-            assignedToUserId: $('#assignedToUserId').val() || null,
-            note: $('#assignmentNote').val()
+
+    // 6. Dynamic Department Technicians Dropdown
+    function setupDepartmentChangeListener() {
+        $('#assignDepartment').on('change', function () {
+            const deptId = $(this).val();
+            const techSelect = $('#assignTechnician');
+
+            if (!deptId) {
+                techSelect.html('<option value="">-- Select Field Technician --</option>');
+                return;
+            }
+
+            techSelect.html('<option value="">Loading technicians...</option>');
+            $.get('/Admin/GetTechniciansByDepartment', { departmentId: deptId })
+                .done(function (technicians) {
+                    techSelect.html('<option value="">-- Select Field Technician --</option>');
+                    if (technicians && technicians.length > 0) {
+                        technicians.forEach(function (tech) {
+                            techSelect.append(`<option value="${tech.userId}">${tech.name} (${tech.email})</option>`);
+                        });
+                    } else {
+                        techSelect.append('<option value="" disabled>No technicians in this department</option>');
+                    }
+                })
+                .fail(function () {
+                    techSelect.html('<option value="">Error loading technicians</option>');
+                });
+        });
+    }
+
+    // 7. Save & Dispatch Assignment
+    function saveAssignment() {
+        const btn = $('#btnSaveAssignment');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status"></span> Saving...');
+
+        const payload = {
+            id: $('#assignComplaintId').val(),
+            departmentId: $('#assignDepartment').val() || null,
+            assignedToUserId: $('#assignTechnician').val() || null,
+            note: $('#assignNote').val()
         };
-        
-        $.post('/Admin/Assign', formData)
-            .done(function() {
-                $('#assignmentModal').modal('hide');
-                location.reload();
+
+        $.post('/Admin/Assign', payload)
+            .done(function (res) {
+                btn.prop('disabled', false).html('<i class="fas fa-truck-fast" aria-hidden="true"></i> Save &amp; Dispatch Work Order');
+                if (res.success) {
+                    window.showToast('Assignment dispatched successfully.', 'success');
+                    setTimeout(() => window.location.reload(), 400);
+                } else {
+                    window.showToast(res.message || 'Failed to dispatch assignment.', 'error');
+                }
+            })
+            .fail(function () {
+                btn.prop('disabled', false).html('<i class="fas fa-truck-fast" aria-hidden="true"></i> Save &amp; Dispatch Work Order');
+                window.showToast('Error occurred while dispatching assignment.', 'error');
             });
     }
 </script>

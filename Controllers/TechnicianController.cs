@@ -105,6 +105,11 @@ namespace JanSamadhan.Controllers
                 return Json(new { success = false, message = "Complaint not found or already assigned." });
             }
 
+            if (complaint.Status == ComplaintStatus.Fixed)
+            {
+                return Json(new { success = false, message = "This grievance has already been resolved and closed." });
+            }
+
             complaint.AssignedToUserId = technicianId;
             complaint.Status = ComplaintStatus.InProgress;
             complaint.UpdatedAt = DateTime.UtcNow;

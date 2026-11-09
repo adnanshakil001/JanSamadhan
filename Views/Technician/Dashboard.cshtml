@@ -1,250 +1,366 @@
 @model IEnumerable<JanSamadhan.Models.Complaint>
 @{
     ViewData["Title"] = "Technician Field Operations - JanSamadhan";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
+
+    var stats = ViewBag.Stats;
+    int totalAssigned = stats?.TotalAssigned ?? Model.Count();
+    int inProgress = stats?.InProgress ?? Model.Count(c => c.Status == JanSamadhan.Models.ComplaintStatus.InProgress);
+    int pending = stats?.Pending ?? Model.Count(c => c.Status == JanSamadhan.Models.ComplaintStatus.Pending);
+    int fixedCount = stats?.Fixed ?? Model.Count(c => c.Status == JanSamadhan.Models.ComplaintStatus.Fixed);
+
+    string techName = ViewBag.TechnicianName as string ?? "Field Operator";
+    string initial = string.IsNullOrWhiteSpace(techName) ? "T" : techName.Substring(0, 1).ToUpperInvariant();
+    string deptName = ViewBag.DepartmentName as string ?? "Municipal Services";
+    int points = ViewBag.Points as int? ?? 0;
+    string badgeLevel = ViewBag.BadgeLevel as string ?? "Bronze";
 }
 
-<div class="d-flex min-vh-100 bg-light technician-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="technician-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
+@section Styles {
+    <link rel="stylesheet" href="~/css/complaints.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/technician-field.css" asp-append-version="true" />
+}
+
+<!-- 1. Dashboard Header (Unified with Citizen Dashboard) -->
+<div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold shadow-sm" style="width: 48px; height: 48px; font-size: 1.25rem; flex-shrink: 0;" aria-hidden="true">
+            @initial
+        </div>
         <div>
-            <!-- Brand Logo -->
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-tools text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
-
-            <!-- Navigation Links -->
-            <nav class="nav flex-column gap-1">
-                <a href="/Technician/Dashboard" class="sidebar-link active">
-                    <i class="fas fa-tasks me-3"></i> Assigned Tasks
-                </a>
-                <a href="/Technician/AvailableWork" class="sidebar-link">
-                    <i class="fas fa-inbox me-3"></i> Available Work Pool
-                </a>
-                <a href="/Technician/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> Technician Board
-                </a>
-            </nav>
+            <h1 class="dashboard-title">Technician Field Operations</h1>
+            <p class="dashboard-subtitle">
+                Welcome back, <strong class="text-dark">@techName</strong> &middot; @deptName
+            </p>
         </div>
-
-        <!-- Sidebar Footer Action -->
-        <div class="pt-3 border-top">
-            <div class="p-2 bg-light rounded-3 mb-3 border">
-                <small class="text-muted d-block">Department</small>
-                <strong class="text-dark small"><i class="fas fa-building text-primary me-1"></i>@ViewBag.DepartmentName</strong>
-            </div>
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <!-- Top Header Navigation Bar -->
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-4">
-                <a href="/Technician/Dashboard" class="top-tab-link active">Assigned Tasks</a>
-                <a href="/Technician/AvailableWork" class="top-tab-link text-primary fw-bold">Available Work Pool</a>
-                <a href="/Technician/Scoreboard" class="top-tab-link">Performance Scoreboard</a>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center gap-2 px-3 py-1 bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-pill">
-                    <i class="fas fa-award text-warning"></i>
-                    <span class="small fw-bold text-dark">@ViewBag.Points Pts (@ViewBag.BadgeLevel)</span>
-                </div>
-                <div class="dropdown">
-                    <button class="btn btn-light rounded-pill px-3 py-1 d-flex align-items-center gap-2 border" type="button" data-bs-toggle="dropdown">
-                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                            @(ViewBag.TechnicianName != null && ((string)ViewBag.TechnicianName).Length > 0 ? ((string)ViewBag.TechnicianName).Substring(0, 1).ToUpper() : "T")
-                        </div>
-                        <span class="small fw-semibold text-dark">@ViewBag.TechnicianName</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                        <li><a class="dropdown-item" href="/Account/Profile"><i class="fas fa-user me-2"></i>My Profile</a></li>
-                        <li><a class="dropdown-item" href="/Technician/Scoreboard"><i class="fas fa-trophy me-2"></i>Scoreboard</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="/Account/Logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </header>
-
-        <!-- Page Body Content -->
-        <main class="p-4 flex-grow-1">
-            <!-- Header Title -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">Field Technician Operations</h2>
-                    <p class="text-muted mb-0 small">Manage assigned civic redressal tasks, upload on-site proofs, and update resolution states.</p>
-                </div>
-                <div>
-                    <a href="/Technician/AvailableWork" class="btn btn-primary fw-semibold rounded-pill px-4 shadow-sm">
-                        <i class="fas fa-inbox me-1"></i> Claim Available Tasks
-                    </a>
-                </div>
-            </div>
-
-            <!-- Top Status Metric Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card border-0 text-white rounded-4 shadow-sm bg-primary">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Total Assigned</span>
-                                <h3 class="fw-bold mb-0">@ViewBag.Stats.TotalAssigned</h3>
-                            </div>
-                            <i class="fas fa-clipboard-list fa-2x text-white text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #dc3545;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Pending Action</span>
-                                <h3 class="fw-bold mb-0">@ViewBag.Stats.Pending</h3>
-                            </div>
-                            <i class="fas fa-clock fa-2x text-white text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 text-dark rounded-4 shadow-sm" style="background-color: #ffc107;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-dark text-opacity-75 fw-semibold d-block">In Progress</span>
-                                <h3 class="fw-bold mb-0">@ViewBag.Stats.InProgress</h3>
-                            </div>
-                            <i class="fas fa-tools fa-2x text-dark text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #198754;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Fixed & Completed</span>
-                                <h3 class="fw-bold mb-0">@ViewBag.Stats.Fixed</h3>
-                            </div>
-                            <i class="fas fa-check-double fa-2x text-white text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Assigned Complaints Table Card -->
-            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden">
-                <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0 text-dark">My Assigned Field Tasks</h5>
-                    <span class="text-muted small">@ViewBag.Stats.TotalAssigned total tasks</span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light small text-muted">
-                            <tr>
-                                <th class="ps-4">Complaint ID</th>
-                                <th>Problem Type</th>
-                                <th>Location Address</th>
-                                <th>Current Status</th>
-                                <th>Assigned Date</th>
-                                <th class="pe-4 text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!Model.Any())
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">
-                                        <i class="fas fa-tools fa-3x mb-3 opacity-25"></i>
-                                        <h5>No tasks assigned currently</h5>
-                                        <p class="small text-muted mb-3">Check the Available Work Pool to claim unassigned tasks for your department.</p>
-                                        <a href="/Technician/AvailableWork" class="btn btn-primary rounded-pill px-4">Browse Available Work</a>
-                                    </td>
-                                </tr>
-                            }
-                            @foreach (var complaint in Model)
-                            {
-                                <tr>
-                                    <td class="ps-4 fw-bold text-dark">#@complaint.ComplaintId</td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border px-2 py-1">@complaint.ProblemType</span>
-                                    </td>
-                                    <td class="small text-truncate" style="max-width: 280px;" title="@complaint.Address">
-                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>@(complaint.Address ?? "Location pinned on map")
-                                    </td>
-                                    <td>
-                                        <span class="badge status-badge @(complaint.Status.ToString().ToLower()) rounded-pill px-3 py-1">
-                                            @complaint.Status
-                                        </span>
-                                    </td>
-                                    <td class="small text-muted">@complaint.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</td>
-                                    <td class="pe-4 text-end">
-                                        <a href="@Url.Action("Details", new { id = complaint.ComplaintId })" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
-                                            <i class="fas fa-camera me-1"></i> Work & Upload Proofs
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-3 py-2 fw-bold">
+            <i class="fas fa-award text-warning me-1" aria-hidden="true"></i>@points Pts &middot; @badgeLevel
+        </span>
+        <a href="/Technician/AvailableWork" class="dashboard-action-btn">
+            <i class="fas fa-inbox" aria-hidden="true"></i>
+            <span>Claim New Work</span>
+        </a>
     </div>
 </div>
 
-<style>
-.technician-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+<!-- 2. 4-Metric KPI Row (Citizen Design System) -->
+<section class="metrics-grid metrics-grid--4" aria-label="Assigned Task Metrics">
+    <div class="metric-card metric-card--primary">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Total Roster</span>
+            <span class="metric-card__count">@totalAssigned</span>
+            <small class="text-muted mt-1 text-xs">All assigned tickets</small>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+    </div>
+
+    <div class="metric-card metric-card--inprogress">
+        <div class="metric-card__content">
+            <span class="metric-card__label">In Field Repair</span>
+            <span class="metric-card__count">@inProgress</span>
+            <small class="text-warning mt-1 text-xs fw-semibold">Active tasks</small>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-screwdriver-wrench"></i>
+        </div>
+    </div>
+
+    <div class="metric-card metric-card--pending">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Awaiting Triage</span>
+            <span class="metric-card__count">@pending</span>
+            <small class="text-danger mt-1 text-xs fw-semibold">Action required</small>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-clock"></i>
+        </div>
+    </div>
+
+    <div class="metric-card metric-card--fixed">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Resolved Fixed</span>
+            <span class="metric-card__count">@fixedCount</span>
+            <small class="text-success mt-1 text-xs fw-semibold">Proof uploaded</small>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-circle-check"></i>
+        </div>
+    </div>
+</section>
+
+<!-- 3. Toolbar (Segmented Tabs, Navigation & Live Search) -->
+<div class="complaints-toolbar">
+    <!-- Segmented Status Tabs -->
+    <div class="filter-tabs" role="tablist" aria-label="Filter Assigned Tasks">
+        <button type="button" class="filter-tab active" data-filter="all" role="tab" aria-selected="true">
+            <span>All Tasks</span>
+            <span class="filter-tab__count">@totalAssigned</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="inprogress" role="tab" aria-selected="false">
+            <span>In Field</span>
+            <span class="filter-tab__count">@inProgress</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="pending" role="tab" aria-selected="false">
+            <span>Pending</span>
+            <span class="filter-tab__count">@pending</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="fixed" role="tab" aria-selected="false">
+            <span>Resolved</span>
+            <span class="filter-tab__count">@fixedCount</span>
+        </button>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 flex-grow-1 justify-content-end">
+        <a href="/Technician/AvailableWork" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1">
+            <i class="fas fa-inbox" aria-hidden="true"></i> <span>Work Pool</span>
+        </a>
+        <a href="/Technician/Scoreboard" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1">
+            <i class="fas fa-medal" aria-hidden="true"></i> <span>Leaderboard</span>
+        </a>
+        <div class="search-wrapper" style="max-width: 260px;">
+            <i class="fas fa-search search-icon" aria-hidden="true"></i>
+            <input type="search" id="taskSearchInput" class="search-input" placeholder="Search tasks or address..." aria-label="Search assigned tasks" />
+        </div>
+    </div>
+</div>
+
+<!-- 4. Tasks Table & Cards Presentation -->
+@if (!Model.Any())
+{
+    <div class="card border rounded-4 shadow-sm bg-white p-5 text-center my-4">
+        <i class="fas fa-clipboard-check fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
+        <h2 class="h5 fw-bold text-dark">No Assigned Tasks Right Now</h2>
+        <p class="text-muted small mb-4">You have cleared all active field duties or have not been dispatched new tickets.</p>
+        <div>
+            <a href="/Technician/AvailableWork" class="dashboard-action-btn">
+                <i class="fas fa-inbox me-1"></i> Browse Department Work Pool
+            </a>
+        </div>
+    </div>
 }
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
+else
+{
+    <!-- Desktop Table View -->
+    <div class="complaints-table-container mb-4">
+        <table class="complaints-table mb-0" aria-label="Assigned Field Tasks">
+            <thead>
+                <tr>
+                    <th scope="col">Case ID</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Location Address</th>
+                    <th scope="col">Citizen</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Reported Date</th>
+                    <th scope="col" class="text-end">Field Actions</th>
+                </tr>
+            </thead>
+            <tbody id="techTasksTbody">
+                @foreach (var c in Model)
+                {
+                    var isFixed = c.Status == JanSamadhan.Models.ComplaintStatus.Fixed;
+                    var isInProgress = c.Status == JanSamadhan.Models.ComplaintStatus.InProgress;
+                    var statusKey = isFixed ? "fixed" : (isInProgress ? "inprogress" : "pending");
+                    var statusClass = isFixed ? "status-pill--fixed" : (isInProgress ? "status-pill--inprogress" : "status-pill--pending");
+
+                    var elapsedHours = (DateTime.UtcNow - c.CreatedAt).TotalHours;
+                    var isUrgent = elapsedHours > 48 && !isFixed;
+
+                    <tr class="task-row" data-status="@statusKey" data-search="@c.ComplaintId @c.ProblemType @c.Address @c.Description @(c.User?.Name)">
+                        <td>
+                            <strong class="text-dark">#JS-@c.ComplaintId</strong>
+                            @if (isUrgent)
+                            {
+                                <span class="badge bg-danger text-white rounded-pill text-xs ms-1">Urgent</span>
+                            }
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                @c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                            </div>
+                        </td>
+                        <td>
+                            <span class="category-pill">
+                                @c.ProblemType
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(c.Description))
+                            {
+                                <div class="text-muted small text-truncate mt-1" style="max-width: 220px;" title="@c.Description">
+                                    @c.Description
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1 text-truncate" style="max-width: 240px;" title="@c.Address">
+                                <i class="fas fa-location-dot text-danger flex-shrink-0" aria-hidden="true"></i>
+                                <span>@(string.IsNullOrWhiteSpace(c.Address) ? "Coordinates registered" : c.Address)</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark small">@(c.User?.Name ?? "Anonymous")</div>
+                            <span class="badge bg-light text-muted border text-xs">@(c.User?.Role ?? "Citizen")</span>
+                        </td>
+                        <td>
+                            <span class="status-pill @statusClass">
+                                @(c.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "In Progress" : c.Status.ToString())
+                            </span>
+                        </td>
+                        <td class="small text-muted whitespace-nowrap">
+                            @c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                            <span class="d-block text-xs">@c.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex align-items-center gap-2">
+                                <a href="https://www.google.com/maps/search/?api=1&query=@c.Latitude,@c.Longitude" 
+                                   target="_blank" rel="noopener noreferrer" 
+                                   class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1" title="Open navigation in Google Maps">
+                                    <i class="fas fa-location-arrow text-primary" aria-hidden="true"></i>
+                                </a>
+                                <a href="/Technician/Details/@c.ComplaintId" class="table-action-btn">
+                                    <span>@(isFixed ? "Review Proof" : "Work on Task")</span>
+                                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile Card Feed -->
+    <div class="complaints-cards-container mb-4" id="techTasksMobileFeed">
+        @foreach (var c in Model)
+        {
+            var isFixed = c.Status == JanSamadhan.Models.ComplaintStatus.Fixed;
+            var isInProgress = c.Status == JanSamadhan.Models.ComplaintStatus.InProgress;
+            var statusKey = isFixed ? "fixed" : (isInProgress ? "inprogress" : "pending");
+            var statusClass = isFixed ? "status-pill--fixed" : (isInProgress ? "status-pill--inprogress" : "status-pill--pending");
+
+            var elapsedHours = (DateTime.UtcNow - c.CreatedAt).TotalHours;
+            var isUrgent = elapsedHours > 48 && !isFixed;
+
+            <div class="mobile-complaint-card task-card" data-status="@statusKey" data-search="@c.ComplaintId @c.ProblemType @c.Address @c.Description @(c.User?.Name)">
+                <div class="mobile-card__head">
+                    <span class="category-pill">
+                        <strong>#JS-@c.ComplaintId</strong> &middot; @c.ProblemType
+                    </span>
+                    <span class="status-pill @statusClass">
+                        @(c.Status == JanSamadhan.Models.ComplaintStatus.InProgress ? "In Progress" : c.Status.ToString())
+                    </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="fw-bold text-dark fs-6">@c.ProblemType</span>
+                    @if (isUrgent)
+                    {
+                        <span class="badge bg-danger text-white rounded-pill text-xs">Over 48h</span>
+                    }
+                </div>
+                <p class="text-muted small mb-1">@(string.IsNullOrWhiteSpace(c.Description) ? "No detailed description provided." : c.Description)</p>
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="fas fa-location-dot text-danger flex-shrink-0" aria-hidden="true"></i>
+                    <span class="text-truncate">@(string.IsNullOrWhiteSpace(c.Address) ? "Geo-coordinates logged" : c.Address)</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-2">
+                    <a href="https://www.google.com/maps/search/?api=1&query=@c.Latitude,@c.Longitude" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                        <i class="fas fa-location-arrow me-1" aria-hidden="true"></i> Navigate
+                    </a>
+                    <a href="/Technician/Details/@c.ComplaintId" class="table-action-btn">
+                        <span>@(isFixed ? "Review Proof" : "Work on Task")</span>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Empty Search Results Card -->
+    <div class="card border rounded-4 shadow-sm bg-white p-5 text-center my-4" id="noFilterResultsCard" style="display: none;">
+        <i class="fas fa-filter fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
+        <h2 class="h5 fw-bold text-dark">No matching tasks found</h2>
+        <p class="text-muted small mb-3">Try adjusting your search keywords or switching status tabs.</p>
+        <div>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" id="btnResetTechFilters">Reset Filters</button>
+        </div>
+    </div>
 }
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabs = document.querySelectorAll('.filter-tab[data-filter]');
+        const searchInput = document.getElementById('taskSearchInput');
+        const rows = document.querySelectorAll('.task-row');
+        const cards = document.querySelectorAll('.task-card');
+        const emptyState = document.getElementById('noFilterResultsCard');
+        const resetBtn = document.getElementById('btnResetTechFilters');
+
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        function applyFilter() {
+            let visibleCount = 0;
+
+            function matches(el) {
+                const status = el.getAttribute('data-status');
+                const search = (el.getAttribute('data-search') || '').toLowerCase();
+                const matchesStatus = currentFilter === 'all' || status === currentFilter;
+                const matchesQuery = !searchQuery || search.includes(searchQuery);
+                return matchesStatus && matchesQuery;
+            }
+
+            rows.forEach(r => {
+                const m = matches(r);
+                r.style.display = m ? '' : 'none';
+                if (m) visibleCount++;
+            });
+
+            cards.forEach(c => {
+                c.style.display = matches(c) ? '' : 'none';
+            });
+
+            if (emptyState) {
+                emptyState.style.display = (visibleCount === 0 && (rows.length > 0)) ? '' : 'none';
+            }
+        }
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
+                currentFilter = this.getAttribute('data-filter');
+                applyFilter();
+            });
+        });
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                searchQuery = this.value.trim().toLowerCase();
+                applyFilter();
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                currentFilter = 'all';
+                searchQuery = '';
+                if (searchInput) searchInput.value = '';
+                tabs.forEach(t => {
+                    if (t.getAttribute('data-filter') === 'all') {
+                        t.classList.add('active');
+                        t.setAttribute('aria-selected', 'true');
+                    } else {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    }
+                });
+                applyFilter();
+            });
+        }
+    });
+</script>
 }
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-.top-tab-link {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding-bottom: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-.top-tab-link:hover {
-    color: #0f172a;
-}
-.top-tab-link.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
-    font-weight: 600;
-}
-.status-badge.pending { background-color: #dc3545 !important; color: #fff; }
-.status-badge.inprogress { background-color: #ffc107 !important; color: #000; }
-.status-badge.fixed { background-color: #198754 !important; color: #fff; }
-</style>

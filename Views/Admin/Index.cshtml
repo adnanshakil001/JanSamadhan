@@ -1,562 +1,657 @@
 @model IEnumerable<JanSamadhan.Models.Complaint>
+@functions {
+    public static string GetCategoryIcon(string problemType)
+    {
+        if (string.IsNullOrEmpty(problemType)) return "fa-triangle-exclamation";
+        var lower = problemType.ToLowerInvariant();
+        if (lower.Contains("pothole") || lower.Contains("road")) return "fa-road";
+        if (lower.Contains("light") || lower.Contains("lamp")) return "fa-lightbulb";
+        if (lower.Contains("garbage") || lower.Contains("waste") || lower.Contains("trash") || lower.Contains("clean")) return "fa-trash-can";
+        if (lower.Contains("water") || lower.Contains("drain") || lower.Contains("sewage") || lower.Contains("leak")) return "fa-faucet-drip";
+        if (lower.Contains("traffic") || lower.Contains("signal")) return "fa-traffic-light";
+        if (lower.Contains("park") || lower.Contains("tree")) return "fa-tree";
+        return "fa-circle-exclamation";
+    }
+}
 @{
-    ViewData["Title"] = "Admin Dashboard - JanSamadhan";
-    ViewData["HideDefaultNav"] = true;
-    ViewData["FullWidth"] = true;
+    ViewData["Title"] = "Admin Command Center — JanSamadhan";
     var topTechs = ViewBag.TopTechnicians as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var deptStats = ViewBag.DepartmentStats as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+
+    var pendingCount = (int)(ViewBag.TotalPending ?? 0);
+    var inProgressCount = (int)(ViewBag.TotalInProgress ?? 0);
+    var fixedCount = (int)(ViewBag.TotalFixed ?? 0);
+    var totalAll = pendingCount + inProgressCount + fixedCount;
+    var totalFiltered = (int)(ViewBag.TotalCount ?? totalAll);
+
+    var resolvedRate = totalAll > 0 ? (int)Math.Round((double)fixedCount / totalAll * 100) : 0;
+    var pendingRate = totalAll > 0 ? (int)Math.Round((double)pendingCount / totalAll * 100) : 0;
+    var inProgressRate = totalAll > 0 ? (int)Math.Round((double)inProgressCount / totalAll * 100) : 0;
+    var currentStatus = ViewBag.Status as string ?? "";
 }
 
-<div class="d-flex min-vh-100 bg-light admin-dashboard-root">
-    <!-- Left Sidebar -->
-    <aside class="admin-sidebar bg-white border-end d-flex flex-column justify-content-between p-3" style="width: 260px; min-width: 260px;">
-        <div>
-            <!-- Brand Logo -->
-            <a href="/" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold fs-4 mb-4 px-2">
-                <i class="fas fa-landmark text-primary"></i>
-                <span>JanSamadhan</span>
-            </a>
+@section Styles {
+    <link rel="stylesheet" href="~/css/complaints.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
 
-            <!-- Navigation Links -->
-            <nav class="nav flex-column gap-1">
-                <a href="/Admin" class="sidebar-link active">
-                    <i class="fas fa-th-large me-3"></i> Admin Dashboard
-                </a>
-                <a href="/Map/AdminMap" class="sidebar-link">
-                    <i class="fas fa-map-marked-alt me-3"></i> Map View
-                </a>
-                <a href="/Role" class="sidebar-link">
-                    <i class="fas fa-users-cog me-3"></i> Role Management
-                </a>
-                <a href="/Admin/TechnicianScoreboard" class="sidebar-link">
-                    <i class="fas fa-chart-line me-3"></i> Technician Board
-                </a>
-                <a href="/Admin/Scoreboard" class="sidebar-link">
-                    <i class="fas fa-medal me-3"></i> User Scoreboard
-                </a>
-            </nav>
-        </div>
-
-        <!-- Sidebar Footer Action -->
-        <div class="pt-3 border-top">
-            <a href="/Admin/CreateTechnician" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2 shadow-sm">
-                <i class="fas fa-user-plus"></i> + Add Technician
-            </a>
-            <div class="d-flex align-items-center justify-content-between px-2 text-muted small">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-cog"></i> Settings
-                </a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none d-flex align-items-center gap-1">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Panel -->
-    <div class="flex-grow-1 d-flex flex-column overflow-auto">
-        <!-- Top Header Navigation Bar -->
-        <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-            <div class="d-flex align-items-center gap-4">
-                <a href="/Admin" class="top-tab-link active">Admin Dashboard</a>
-                <a href="/Admin/CreateTechnician" class="top-tab-link text-success fw-bold">+ Create Technician</a>
-                <a href="/Role" class="top-tab-link">Role Management</a>
-                <a href="/Map/AdminMap" class="top-tab-link">Map View</a>
-                <div class="dropdown">
-                    <a class="top-tab-link dropdown-toggle text-decoration-none" href="#" role="button" data-bs-toggle="dropdown">
-                        Scoreboards
+<!-- 1. Dashboard Header (Unified with Citizen Dashboard) -->
+<div class="dashboard-header">
+    <div>
+        <h1 class="dashboard-title">Admin Command Center</h1>
+        <p class="dashboard-subtitle">Real-time operational dispatch, department triage, and civic grievance resolution</p>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="/Admin/CreateTechnician" class="dashboard-action-btn">
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+            <span>Add Technician</span>
+        </a>
+        <a href="/Map/AdminMap" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+            <i class="fas fa-map-location-dot" aria-hidden="true"></i>
+            <span>Full GIS Map</span>
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold dropdown-toggle d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-file-export" aria-hidden="true"></i>
+                <span>Export</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "csv" })">
+                        <i class="fas fa-file-csv text-success"></i> Export as CSV
                     </a>
-                    <ul class="dropdown-menu shadow-sm">
-                        <li><a class="dropdown-item" href="/Admin/Scoreboard">User Scoreboard</a></li>
-                        <li><a class="dropdown-item" href="/Admin/TechnicianScoreboard">Technician Scoreboard</a></li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <a href="/Account/Profile" class="text-secondary text-decoration-none small fw-semibold">Profile</a>
-                <a href="/Account/Logout" class="text-danger text-decoration-none small fw-semibold">Logout</a>
-            </div>
-        </header>
-
-        <!-- Page Body Content -->
-        <main class="p-4 flex-grow-1">
-            <!-- Header Title -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2 class="fw-bolder text-dark mb-0">All Complaints</h2>
-                    <p class="text-muted mb-0 small">Operational Dispatch & Live Grievance Management</p>
-                </div>
-            </div>
-
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
-
-            <!-- 1. Top Section: 3 Status Metric Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #dc3545;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Pending Complaints</span>
-                                <h3 class="fw-bold mb-0">Pending: @ViewBag.TotalPending</h3>
-                            </div>
-                            <i class="fas fa-clock fa-2x text-white text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 text-dark rounded-4 shadow-sm" style="background-color: #ffc107;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-dark text-opacity-75 fw-semibold d-block">Active In-Progress</span>
-                                <h3 class="fw-bold mb-0">In Progress: @ViewBag.TotalInProgress</h3>
-                            </div>
-                            <i class="fas fa-tools fa-2x text-dark text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 text-white rounded-4 shadow-sm" style="background-color: #198754;">
-                        <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="fs-6 text-white text-opacity-75 fw-semibold d-block">Resolved & Closed</span>
-                                <h3 class="fw-bold mb-0">Fixed: @ViewBag.TotalFixed</h3>
-                            </div>
-                            <i class="fas fa-check-circle fa-2x text-white text-opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Filters & Search Panel (At the top right below metrics) -->
-            <div class="card border rounded-4 shadow-sm mb-4 bg-white">
-                <div class="card-header bg-white border-0 pt-3 px-4">
-                    <h6 class="fw-bold mb-0 text-dark">Filters & Search</h6>
-                </div>
-                <div class="card-body px-4 pb-4 pt-1">
-                    <form method="get" action="/Admin" class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold text-muted mb-1">Status</label>
-                            <select class="form-select rounded-3" name="status">
-                                <option value="">All</option>
-                                <option value="Pending" selected="@(ViewBag.Status == "Pending")">Pending</option>
-                                <option value="InProgress" selected="@(ViewBag.Status == "InProgress")">In Progress</option>
-                                <option value="Fixed" selected="@(ViewBag.Status == "Fixed")">Fixed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold text-muted mb-1">Department</label>
-                            <select class="form-select rounded-3" name="departmentId">
-                                <option value="">All</option>
-                                @foreach (var dept in ViewBag.Departments)
-                                {
-                                    <option value="@dept.DepartmentId" selected="@(ViewBag.DepartmentId == dept.DepartmentId)">@dept.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold text-muted mb-1">Assigned To</label>
-                            <select class="form-select rounded-3" name="assignedToUserId">
-                                <option value="">All</option>
-                                @foreach (var user in ViewBag.Users)
-                                {
-                                    <option value="@user.UserId" selected="@(ViewBag.AssignedToUserId == user.UserId)">@user.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold text-muted mb-1">Search</label>
-                            <input type="text" class="form-control rounded-3" name="q" value="@ViewBag.Q" placeholder="Search complaints...">
-                        </div>
-                        <div class="col-12 d-flex flex-wrap gap-2 align-items-center pt-2">
-                            <button type="submit" class="btn btn-primary px-3 rounded-3 fw-semibold">Apply Filters</button>
-                            <a href="/Admin" class="btn btn-outline-secondary px-3 rounded-3">Reset</a>
-                            <a href="/Admin/CreateTechnician" class="btn btn-success fw-bold rounded-3">+ Add Technician</a>
-                            <a href="/Role" class="btn btn-outline-warning text-dark rounded-3">Manage Roles</a>
-                            <a href="/Admin/Scoreboard" class="btn btn-outline-info text-dark rounded-3">Scoreboard</a>
-                            <a href="/Admin/TechnicianScoreboard" class="btn btn-outline-success rounded-3">Technician Board</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- 3. Export Options & Counter Header -->
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="text-muted small fw-semibold">Showing @((ViewBag.CurrentPage - 1) * ViewBag.PageSize + 1) to @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalCount)) of @ViewBag.TotalCount complaints</span>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-pill px-3" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-download me-1"></i> Export
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                        <li><a class="dropdown-item" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "csv" })">Export as CSV</a></li>
-                        <li><a class="dropdown-item" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "excel" })">Export as Excel</a></li>
-                        <li><a class="dropdown-item" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "pdf" })">Export as PDF</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- 4. All Complaints Management Table -->
-            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden mb-4">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light small text-muted">
-                            <tr>
-                                <th class="ps-4">
-                                    <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "CreatedAt", sortOrder = ViewBag.SortBy == "CreatedAt" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none text-dark">
-                                        Created @if (ViewBag.SortBy == "CreatedAt") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "Username", sortOrder = ViewBag.SortBy == "Username" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none text-dark">
-                                        User @if (ViewBag.SortBy == "Username") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "ProblemType", sortOrder = ViewBag.SortBy == "ProblemType" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none text-dark">
-                                        Type @if (ViewBag.SortBy == "ProblemType") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
-                                    </a>
-                                </th>
-                                <th>Address</th>
-                                <th>
-                                    <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "Status", sortOrder = ViewBag.SortBy == "Status" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none text-dark">
-                                        Status @if (ViewBag.SortBy == "Status") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i> }
-                                    </a>
-                                </th>
-                                <th>Department</th>
-                                <th>User Role</th>
-                                <th>Photo</th>
-                                <th class="pe-4">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!Model.Any())
-                            {
-                                <tr>
-                                    <td colspan="9" class="text-center py-5 text-muted">
-                                        <i class="fas fa-clipboard-check fa-3x mb-3 opacity-25"></i>
-                                        <p class="mb-0">No complaints matching the current filter criteria.</p>
-                                    </td>
-                                </tr>
-                            }
-                            @foreach (var c in Model)
-                            {
-                                <tr>
-                                    <td class="ps-4 small text-muted">@c.CreatedAt.ToLocalTime().ToString("g")</td>
-                                    <td class="fw-semibold text-dark">@c.User?.Name</td>
-                                    <td><span class="badge bg-light text-dark border">@c.ProblemType</span></td>
-                                    <td class="small text-truncate" style="max-width: 180px;" title="@c.Address">@c.Address</td>
-                                    <td>
-                                        <span class="badge status-badge @(c.Status.ToString().ToLower()) rounded-pill px-3 py-1">
-                                            @c.Status
-                                        </span>
-                                    </td>
-                                    <td class="small">@(c.Department?.Name ?? "Unassigned")</td>
-                                    <td>
-                                        <span class="badge bg-secondary bg-opacity-10 text-dark border rounded-pill px-2 py-1 small">
-                                            @(c.User?.Role ?? "User")
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(c.PhotoPath))
-                                        {
-                                            <a href="@c.PhotoPath" target="_blank" class="btn btn-sm btn-outline-secondary p-1 rounded">
-                                                <i class="fas fa-image"></i>
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small">—</span>
-                                        }
-                                    </td>
-                                    <td class="pe-4">
-                                        <div class="d-flex align-items-center gap-1">
-                                            <a href="@Url.Action("Details", "Admin", new { id = c.ComplaintId })" class="btn btn-sm btn-outline-primary rounded-3">
-                                                View Details
-                                            </a>
-                                            <form method="post" asp-action="UpdateStatus" asp-controller="Admin" class="d-flex gap-1">
-                                                <input type="hidden" name="id" value="@c.ComplaintId" />
-                                                <select class="form-select form-select-sm rounded-3" name="status" style="width: 110px;">
-                                                    @if (c.Status == JanSamadhan.Models.ComplaintStatus.Pending)
-                                                    {
-                                                        <option value="0" selected>Pending</option>
-                                                        <option value="1">In Progress</option>
-                                                        <option value="2">Fixed</option>
-                                                    }
-                                                    else if (c.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
-                                                    {
-                                                        <option value="1" selected>In Progress</option>
-                                                        <option value="2">Fixed</option>
-                                                    }
-                                                    else if (c.Status == JanSamadhan.Models.ComplaintStatus.Fixed)
-                                                    {
-                                                        <option value="2" selected>Fixed</option>
-                                                    }
-                                                </select>
-                                                <button class="btn btn-sm btn-primary rounded-3" type="submit" @(c.Status == JanSamadhan.Models.ComplaintStatus.Fixed ? "disabled" : "")>
-                                                    Update
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                @if (ViewBag.TotalPages > 1)
-                {
-                    <div class="card-footer bg-white border-0 py-3">
-                        <ul class="pagination justify-content-center mb-0">
-                            <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                                <a class="page-link rounded-pill px-3 me-1" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = ViewBag.CurrentPage - 1 })">Previous</a>
-                            </li>
-                            
-                            @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
-                            {
-                                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
-                                    <a class="page-link rounded-circle mx-1 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = i })">@i</a>
-                                </li>
-                            }
-                            
-                            <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                                <a class="page-link rounded-pill px-3 ms-1" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = ViewBag.CurrentPage + 1 })">Next</a>
-                            </li>
-                        </ul>
-                    </div>
-                }
-            </div>
-
-            <!-- 5. Analytics & Performance Section (Below Main Table) -->
-            <div class="row g-4 mb-4">
-                <!-- City-Wide Grievance Density Map -->
-                <div class="col-lg-8">
-                    <div class="card border rounded-4 shadow-sm h-100 bg-white overflow-hidden">
-                        <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
-                            <h5 class="fw-bold mb-0 text-dark">City-Wide Grievance Density</h5>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 font-monospace">
-                                    ● High Density
-                                </span>
-                                <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill px-3 py-1 font-monospace">
-                                    ● Moderate
-                                </span>
-                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 font-monospace">
-                                    ● Cleared
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body p-3">
-                            <div id="densityMap" style="height: 280px; width: 100%; border-radius: 12px; background: #e2e8f0;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Department SLA Performance (ONLY Real Data) -->
-                <div class="col-lg-4">
-                    <div class="card border rounded-4 shadow-sm h-100 bg-white">
-                        <div class="card-header bg-white border-0 pt-3 px-4">
-                            <h5 class="fw-bold mb-0 text-dark">Department SLA Performance</h5>
-                        </div>
-                        <div class="card-body px-4 py-3 d-flex flex-column gap-3 justify-content-center">
-                            @if (!deptStats.Any())
-                            {
-                                <div class="text-center py-4 text-muted">
-                                    <i class="fas fa-building fa-2x mb-2 opacity-50"></i>
-                                    <p class="mb-0 small">No active departments found.</p>
-                                </div>
-                            }
-                            else
-                            {
-                                @foreach (var d in deptStats)
-                                {
-                                    var rate = (int)d.Rate;
-                                    var colorClass = rate >= 75 ? "bg-success" : (rate >= 50 ? "bg-warning" : "bg-danger");
-                                    var textColorClass = rate >= 75 ? "text-success" : (rate >= 50 ? "text-warning text-dark" : "text-danger");
-                                    <div class="dept-sla-item">
-                                        <div class="d-flex justify-content-between small fw-semibold mb-1">
-                                            <span>@d.Name</span>
-                                            <span class="@textColorClass">@rate%</span>
-                                        </div>
-                                        <div class="progress" style="height: 8px;">
-                                            <div class="progress-bar @colorClass rounded" style="width: @rate%"></div>
-                                        </div>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 6. Top Technicians Leaderboard (ONLY Real Data) -->
-            <div class="card border rounded-4 shadow-sm bg-white overflow-hidden mb-4">
-                <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0 text-dark">Top Technicians Leaderboard</h5>
-                    <a href="/Admin/TechnicianScoreboard" class="text-primary small fw-semibold text-decoration-none">View All →</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead class="bg-light small text-muted">
-                            <tr>
-                                <th class="ps-4">Technician</th>
-                                <th>Department</th>
-                                <th>Completion Rate</th>
-                                <th class="pe-4 text-end">Points</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!topTechs.Any())
-                            {
-                                <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">
-                                        <i class="fas fa-tools fa-2x mb-2 opacity-50"></i>
-                                        <p class="mb-0 small">No technician activity recorded yet.</p>
-                                    </td>
-                                </tr>
-                            }
-                            else
-                            {
-                                int rank = 1;
-                                foreach (var tech in topTechs)
-                                {
-                                    var badgeColor = rank == 1 ? "bg-warning text-dark" : (rank == 2 ? "bg-secondary text-white" : "bg-dark text-white");
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <span class="badge @badgeColor rounded-circle rank-badge">#@rank</span>
-                                                <div>
-                                                    <div class="fw-bold text-dark">@tech.Name</div>
-                                                    <small class="text-muted">@tech.Email</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>@tech.DepartmentName</td>
-                                        <td><span class="text-success fw-bold">@tech.CompletionRate%</span></td>
-                                        <td class="pe-4 text-end fw-bold">@tech.Points.ToString("N0")</td>
-                                    </tr>
-                                    rank++;
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "excel" })">
+                        <i class="fas fa-file-excel text-success"></i> Export as Excel
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2" href="@Url.Action("Export", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, format = "pdf" })">
+                        <i class="fas fa-file-pdf text-danger"></i> Export as PDF
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
 </div>
 
-<style>
-.admin-dashboard-root {
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="fas fa-circle-check me-2" aria-hidden="true"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
-.sidebar-link:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
+<!-- 2. 4-Metric KPI Row (Citizen Design System) -->
+<section class="metrics-grid metrics-grid--4" aria-label="Operational Key Metrics">
+    <div class="metric-card metric-card--primary">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Total Grievances</span>
+            <span class="metric-card__count">@totalAll.ToString("N0")</span>
+            <small class="text-muted mt-1 text-xs">All-time municipal volume</small>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-layer-group"></i>
+        </div>
+    </div>
 
-.sidebar-link.active {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
+    <div class="metric-card metric-card--pending">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Pending Triage</span>
+            <span class="metric-card__count">@pendingCount.ToString("N0")</span>
+            @if (pendingCount == 0)
+            {
+                <small class="text-success mt-1 text-xs fw-semibold d-inline-flex align-items-center gap-1">
+                    <i class="fas fa-circle-check"></i> All caught up &middot; 0 pending
+                </small>
+            }
+            else
+            {
+                <small class="text-danger mt-1 text-xs fw-semibold">@pendingRate% awaiting dispatch</small>
+            }
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-clock"></i>
+        </div>
+    </div>
 
-.top-tab-link {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding-bottom: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
+    <div class="metric-card metric-card--inprogress">
+        <div class="metric-card__content">
+            <span class="metric-card__label">In Field Repair</span>
+            <span class="metric-card__count">@inProgressCount.ToString("N0")</span>
+            <small class="text-warning mt-1 text-xs fw-semibold">@inProgressRate% active technicians</small>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-screwdriver-wrench"></i>
+        </div>
+    </div>
 
-.top-tab-link:hover {
-    color: #0f172a;
-}
+    <div class="metric-card metric-card--fixed">
+        <div class="metric-card__content">
+            <span class="metric-card__label">Resolved &amp; Closed</span>
+            <span class="metric-card__count">@fixedCount.ToString("N0")</span>
+            <small class="text-success mt-1 text-xs fw-semibold">@resolvedRate% resolution rate</small>
+        </div>
+        <div class="metric-card__icon" aria-hidden="true">
+            <i class="fas fa-circle-check"></i>
+        </div>
+    </div>
+</section>
 
-.top-tab-link.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
-    font-weight: 600;
-}
+<!-- 3. Master Filter & Search Toolbar (Unified with Citizen Dashboard) -->
+<div class="complaints-toolbar flex-column gap-3">
+    <!-- Segmented Status Tabs -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 w-100">
+        <div class="filter-tabs" role="tablist" aria-label="Filter Complaints by Status">
+            <a href="@Url.Action("Index", new { status = "", departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q })" 
+               class="filter-tab @(string.IsNullOrEmpty(currentStatus) ? "active" : "")" role="tab">
+                <span>All Grievances</span>
+                <span class="filter-tab__count">@totalAll</span>
+            </a>
+            <a href="@Url.Action("Index", new { status = "Pending", departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q })" 
+               class="filter-tab @(currentStatus == "Pending" ? "active" : "")" role="tab">
+                <span>Pending</span>
+                <span class="filter-tab__count">@pendingCount</span>
+            </a>
+            <a href="@Url.Action("Index", new { status = "InProgress", departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q })" 
+               class="filter-tab @(currentStatus == "InProgress" ? "active" : "")" role="tab">
+                <span>In Progress</span>
+                <span class="filter-tab__count">@inProgressCount</span>
+            </a>
+            <a href="@Url.Action("Index", new { status = "Fixed", departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q })" 
+               class="filter-tab @(currentStatus == "Fixed" ? "active" : "")" role="tab">
+                <span>Resolved</span>
+                <span class="filter-tab__count">@fixedCount</span>
+            </a>
+        </div>
 
-.rank-badge {
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
+        <div class="d-flex align-items-center gap-2">
+            <a href="/Role" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                <i class="fas fa-users-gear" aria-hidden="true"></i> <span>Roles</span>
+            </a>
+            <a href="/Admin/Scoreboard" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                <i class="fas fa-trophy" aria-hidden="true"></i> <span>Citizens</span>
+            </a>
+            <a href="/Admin/TechnicianScoreboard" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                <i class="fas fa-award" aria-hidden="true"></i> <span>Technicians</span>
+            </a>
+        </div>
+    </div>
 
-.status-badge.pending { background-color: #dc3545 !important; color: #fff; }
-.status-badge.inprogress { background-color: #ffc107 !important; color: #000; }
-.status-badge.fixed { background-color: #198754 !important; color: #fff; }
-</style>
+    <!-- Dropdown Filters & Search Box -->
+    <form method="get" action="/Admin" class="row g-2 align-items-center w-100 pt-2 border-top">
+        <input type="hidden" name="status" value="@ViewBag.Status" />
+        <div class="col-12 col-md-3">
+            <select class="form-select form-select-sm rounded-pill" name="departmentId" aria-label="Filter by department" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                @foreach (var dept in ViewBag.Departments)
+                {
+                    <option value="@dept.DepartmentId" selected="@(ViewBag.DepartmentId == dept.DepartmentId)">@dept.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-md-3">
+            <select class="form-select form-select-sm rounded-pill" name="assignedToUserId" aria-label="Filter by technician" onchange="this.form.submit()">
+                <option value="">All Field Technicians</option>
+                @foreach (var user in ViewBag.Users)
+                {
+                    <option value="@user.UserId" selected="@(ViewBag.AssignedToUserId == user.UserId)">@user.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                <input type="search" class="search-input" name="q" value="@ViewBag.Q" placeholder="Search keyword, user, or location..." aria-label="Search grievances" />
+            </div>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold flex-grow-1">Filter</button>
+            <a href="/Admin" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- 4. Live Density Map & SLA Analytics Grid -->
+<div class="admin-analytics-grid mb-5">
+    <!-- Density Map Card -->
+    <div class="density-map-card">
+        <div class="admin-table-header">
+            <div>
+                <h2 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="fas fa-map-pin text-primary" aria-hidden="true"></i>
+                    <span>Live Incident Density Map</span>
+                </h2>
+                <span class="text-muted small">Real-time geographic clusters of active citizen grievances</span>
+            </div>
+            <div class="map-legend-pills">
+                <span class="map-legend-pill status-pill--pending">Pending</span>
+                <span class="map-legend-pill status-pill--inprogress">In Progress</span>
+                <span class="map-legend-pill status-pill--fixed">Resolved</span>
+            </div>
+        </div>
+        <div id="densityMap" class="density-map-canvas" role="region" aria-label="Incident Density Map"></div>
+    </div>
+
+    <!-- Department SLA Progress Card -->
+    <div class="dept-sla-card">
+        <div>
+            <h2 class="h6 fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-chart-column text-primary" aria-hidden="true"></i>
+                <span>Department Performance</span>
+            </h2>
+            <span class="text-muted small d-block mb-3">Resolution efficiency by civic agency</span>
+
+            <div class="dept-sla-list">
+                @if (!deptStats.Any())
+                {
+                    <p class="text-muted small py-3 mb-0">No department metrics available.</p>
+                }
+                else
+                {
+                    foreach (var dept in deptStats)
+                    {
+                        <div class="dept-sla-item">
+                            <div class="d-flex justify-content-between align-items-center small">
+                                <span class="fw-semibold text-dark">@dept.Name</span>
+                                <span class="text-muted">
+                                    @dept.Fixed/@dept.Total fixed
+                                    <strong class="text-dark ms-1">@dept.Rate%</strong>
+                                </span>
+                            </div>
+                            <div class="dept-sla-bar-bg" role="progressbar" aria-valuenow="@dept.Rate" aria-valuemin="0" aria-valuemax="100">
+                                <div class="dept-sla-bar-fill @(dept.Rate >= 80 ? "bg-success" : (dept.Rate >= 50 ? "bg-primary" : "bg-warning"))" style="width: @dept.Rate%;"></div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="pt-3 mt-3 border-top d-flex justify-content-between align-items-center text-muted small">
+            <span>Target SLA: &ge;85%</span>
+            <a href="/Department" class="text-primary text-decoration-none fw-semibold">View Queues &rarr;</a>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Top Technicians Leaderboard Card -->
+<div class="top-tech-card mb-5">
+    <div class="admin-table-header">
+        <div>
+            <h2 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-medal text-warning" aria-hidden="true"></i>
+                <span>Top Field Technicians</span>
+            </h2>
+            <span class="text-muted small">Highest-performing field operators ranked by resolved work</span>
+        </div>
+        <a href="/Admin/TechnicianScoreboard" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            Full Board &rarr;
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="admin-table mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Rank</th>
+                    <th>Technician</th>
+                    <th>Department</th>
+                    <th>Tasks Fixed</th>
+                    <th>Resolution Rate</th>
+                    <th class="text-end">Points Earned</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!topTechs.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <p class="mb-0 small">No technician activity recorded yet.</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    int rank = 1;
+                    foreach (var tech in topTechs)
+                    {
+                        var rankClass = rank == 1 ? "rank-badge--1" : (rank == 2 ? "rank-badge--2" : (rank == 3 ? "rank-badge--3" : ""));
+                        var techInitial = string.IsNullOrWhiteSpace(tech.Name) ? "T" : tech.Name.Substring(0, 1).ToUpperInvariant();
+                        <tr>
+                            <td>
+                                <span class="rank-badge @rankClass">
+                                    @if (rank == 1) { <i class="fas fa-crown text-xs me-1"></i> }
+                                    #@rank
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="admin-avatar-sm" aria-hidden="true">@techInitial</div>
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-dark">@tech.Name</div>
+                                        <small class="text-muted d-block text-truncate" style="max-width: 170px;">@tech.Email</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">@tech.DepartmentName</span>
+                            </td>
+                            <td class="fw-bold text-dark">@tech.FixedTasks / @tech.TotalAssigned</td>
+                            <td>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1">
+                                    <i class="fas fa-check-circle me-1"></i>@tech.CompletionRate%
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <span class="points-pill">
+                                    <i class="fas fa-coins text-warning"></i>
+                                    <span>@tech.Points.ToString("N0") pts</span>
+                                </span>
+                            </td>
+                        </tr>
+                        rank++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 6. Complaints Master Table (Citizen Design Structure) -->
+<div class="complaints-table-container mb-4">
+    <div class="admin-table-header p-3 border-bottom">
+        <div>
+            <h2 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-list-check text-primary" aria-hidden="true"></i>
+                <span>Complaints Master Registry</span>
+            </h2>
+            <span class="text-muted small">
+                Showing @((ViewBag.CurrentPage - 1) * ViewBag.PageSize + (totalFiltered > 0 ? 1 : 0)) to @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, totalFiltered)) of @totalFiltered complaints
+            </span>
+        </div>
+        <div class="text-muted small fw-medium">
+            Page @ViewBag.CurrentPage of @Math.Max(1, ViewBag.TotalPages)
+        </div>
+    </div>
+
+    <table class="complaints-table mb-0">
+        <thead>
+            <tr>
+                <th>
+                    <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "CreatedAt", sortOrder = ViewBag.SortBy == "CreatedAt" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none text-muted">
+                        Date @if (ViewBag.SortBy == "CreatedAt") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")" aria-hidden="true"></i> }
+                    </a>
+                </th>
+                <th>
+                    <a href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = "Username", sortOrder = ViewBag.SortBy == "Username" && ViewBag.SortOrder == "asc" ? "desc" : "asc" })" class="text-decoration-none text-muted">
+                        Citizen @if (ViewBag.SortBy == "Username") { <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")" aria-hidden="true"></i> }
+                    </a>
+                </th>
+                <th>Issue Type</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Department</th>
+                <th>Photo</th>
+                <th>Quick Triage</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="fas fa-clipboard-check fa-3x mb-3 text-muted opacity-50" aria-hidden="true"></i>
+                        <p class="mb-0 fw-semibold">No complaints matching the current filter criteria.</p>
+                        <small class="text-muted">Try clearing your search query or reset the filters.</small>
+                    </td>
+                </tr>
+            }
+            @foreach (var c in Model)
+            {
+                var statusClass = c.Status == JanSamadhan.Models.ComplaintStatus.Fixed
+                    ? "status-pill--fixed"
+                    : c.Status == JanSamadhan.Models.ComplaintStatus.InProgress
+                        ? "status-pill--inprogress"
+                        : "status-pill--pending";
+
+                var citizenInitial = string.IsNullOrWhiteSpace(c.User?.Name) ? "C" : c.User.Name.Substring(0, 1).ToUpperInvariant();
+
+                <tr>
+                    <td class="small text-muted whitespace-nowrap">
+                        <span class="fw-semibold text-dark">@c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                        <span class="d-block text-xs text-muted">@c.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="admin-avatar-sm admin-avatar-sm--citizen" aria-hidden="true">@citizenInitial</div>
+                            <div class="min-w-0">
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 140px;">@(c.User?.Name ?? "Anonymous")</div>
+                                <span class="badge bg-light text-muted border text-xs">@(c.User?.Role ?? "Citizen")</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="category-pill">
+                            <i class="fas @GetCategoryIcon(c.ProblemType)" aria-hidden="true"></i>
+                            <span>@c.ProblemType</span>
+                        </span>
+                    </td>
+                    <td class="small text-truncate" style="max-width: 200px;" title="@c.Address">
+                        <i class="fas fa-location-dot text-danger me-1" aria-hidden="true"></i>
+                        @(string.IsNullOrWhiteSpace(c.Address) ? "No address specified" : c.Address)
+                    </td>
+                    <td>
+                        <span class="status-pill @statusClass">@c.Status</span>
+                    </td>
+                    <td class="small text-muted">
+                        @(c.Department?.Name ?? "Unassigned")
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(c.PhotoPath))
+                        {
+                            <a href="@c.PhotoPath" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary p-1 rounded-2" title="View uploaded image">
+                                <i class="fas fa-image" aria-hidden="true"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">&mdash;</span>
+                        }
+                    </td>
+                    <td>
+                        @if (c.Status == JanSamadhan.Models.ComplaintStatus.Fixed)
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1 text-xs d-inline-flex align-items-center gap-1">
+                                <i class="fas fa-check-double"></i> Fixed
+                            </span>
+                        }
+                        else
+                        {
+                            <form method="post" asp-action="UpdateStatus" asp-controller="Admin" class="d-flex align-items-center gap-1">
+                                <input type="hidden" name="id" value="@c.ComplaintId" />
+                                <select class="form-select form-select-sm rounded-pill text-xs py-1" name="status" style="min-width: 105px;" aria-label="Change status">
+                                    @if (c.Status == JanSamadhan.Models.ComplaintStatus.Pending)
+                                    {
+                                        <option value="0" selected>Pending</option>
+                                        <option value="1">In Progress</option>
+                                        <option value="2">Fixed</option>
+                                    }
+                                    else if (c.Status == JanSamadhan.Models.ComplaintStatus.InProgress)
+                                    {
+                                        <option value="1" selected>In Progress</option>
+                                        <option value="2">Fixed</option>
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-primary rounded-circle p-1 d-flex align-items-center justify-content-center shadow-xs" style="width:26px; height:26px;" type="submit" title="Save status">
+                                    <i class="fas fa-check text-xs" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <a href="@Url.Action("Details", "Admin", new { id = c.ComplaintId })" class="table-action-btn">
+                            <span>Review Case</span>
+                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="admin-table-header p-3 border-top">
+            <span class="text-muted small">Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages</span>
+            <nav aria-label="Complaints registry pagination">
+                <ul class="pagination pagination-sm mb-0 gap-1">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link rounded-pill px-3" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = ViewBag.CurrentPage - 1 })">
+                            Previous
+                        </a>
+                    </li>
+                    @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = i })">
+                                @i
+                            </a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link rounded-pill px-3" href="@Url.Action("Index", new { status = ViewBag.Status, departmentId = ViewBag.DepartmentId, assignedToUserId = ViewBag.AssignedToUserId, q = ViewBag.Q, sortBy = ViewBag.SortBy, sortOrder = ViewBag.SortOrder, page = ViewBag.CurrentPage + 1 })">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+<!-- Mobile Cards Presentation -->
+<div class="complaints-cards-container mb-4">
+    @foreach (var c in Model)
+    {
+        var statusClass = c.Status == JanSamadhan.Models.ComplaintStatus.Fixed
+            ? "status-pill--fixed"
+            : c.Status == JanSamadhan.Models.ComplaintStatus.InProgress
+                ? "status-pill--inprogress"
+                : "status-pill--pending";
+
+        <div class="mobile-complaint-card">
+            <div class="mobile-card__head">
+                <span class="status-pill @statusClass">@c.Status</span>
+                <span class="badge bg-light text-muted border text-xs">Case #@c.ComplaintId</span>
+            </div>
+            <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                <i class="fas @GetCategoryIcon(c.ProblemType) text-primary" aria-hidden="true"></i>
+                <span>@c.ProblemType</span>
+            </div>
+            <p class="text-muted small mb-1">@(string.IsNullOrWhiteSpace(c.Description) ? "No detailed description provided." : c.Description)</p>
+            <div class="d-flex align-items-center gap-2 text-muted small">
+                <i class="fas fa-location-dot text-danger" aria-hidden="true"></i>
+                <span class="text-truncate">@(string.IsNullOrWhiteSpace(c.Address) ? "Coordinates registered" : c.Address)</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                <span class="text-muted text-xs">@c.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                <a href="@Url.Action("Details", "Admin", new { id = c.ComplaintId })" class="table-action-btn">
+                    <span>Review Case</span>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+    }
+</div>
 
 @section Scripts {
 <script>
-    $(document).ready(function() {
-        // Initialize Live Density Map
-        const map = L.map('densityMap').setView([23.2599, 77.4126], 12); // Default to Bhopal
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Live Incident Density Map
+        const mapElement = document.getElementById('densityMap');
+        if (!mapElement) return;
 
+        const defaultBhopal = [23.2599, 77.4126];
+        const map = L.map('densityMap', {
+            zoomControl: true,
+            scrollWheelZoom: false
+        }).setView(defaultBhopal, 12);
+
+        // OpenStreetMap Free & Reliable Tile Server (No API Key Required)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Fetch live map data
-        $.getJSON('/Map/MapData', function(geojson) {
+        // Fetch live incident GeoJSON
+        $.getJSON('/Map/MapData', function (geojson) {
             if (geojson && geojson.features && geojson.features.length > 0) {
                 const markers = [];
-                geojson.features.forEach(function(feat) {
+                geojson.features.forEach(function (feat) {
                     const coords = feat.geometry.coordinates;
                     const props = feat.properties;
                     const lat = coords[1];
                     const lng = coords[0];
 
-                    const color = props.status === 'Fixed' ? '#198754' : (props.status === 'InProgress' ? '#ffc107' : '#dc3545');
+                    // Verify valid geographic coordinates in Central India range
+                    if (lat > 15 && lat < 30 && lng > 70 && lng < 85) {
+                        const color = props.status === 'Fixed'
+                            ? '#047857'
+                            : (props.status === 'InProgress' ? '#b45309' : '#dc2626');
 
-                    const marker = L.circleMarker([lat, lng], {
-                        radius: 8,
-                        fillColor: color,
-                        color: '#fff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.8
-                    }).addTo(map);
+                        const statusClass = props.status === 'Fixed'
+                            ? 'status-pill--fixed'
+                            : (props.status === 'InProgress' ? 'status-pill--inprogress' : 'status-pill--pending');
 
-                    marker.bindPopup(`<b>${props.problemType}</b><br>${props.address || ''}<br><span class="badge status-badge ${props.status.toLowerCase()}">${props.status}</span>`);
-                    markers.push([lat, lng]);
+                        const marker = L.circleMarker([lat, lng], {
+                            radius: 8,
+                            fillColor: color,
+                            color: '#ffffff',
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.85
+                        }).addTo(map);
+
+                        const popupContent = `
+                            <div style="font-family: inherit; font-size: 13px; line-height: 1.4; padding: 2px;">
+                                <strong style="font-size: 14px; color: #0f172a;">${props.problemType || 'Civic Issue'}</strong>
+                                <p style="margin: 4px 0 6px 0; color: #64748b;">${props.address || 'Location coordinates registered'}</p>
+                                <span class="status-pill ${statusClass}" style="display:inline-flex;">${props.status}</span>
+                            </div>
+                        `;
+                        marker.bindPopup(popupContent);
+                        markers.push([lat, lng]);
+                    }
                 });
 
                 if (markers.length > 0) {
-                    map.fitBounds(markers, { padding: [30, 30] });
+                    map.fitBounds(markers, { padding: [35, 35], maxZoom: 14 });
+                } else {
+                    map.setView(defaultBhopal, 12);
                 }
+            } else {
+                map.setView(defaultBhopal, 12);
             }
+
+            // Invalidate size to guarantee smooth render without grey tiles
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 250);
+        });
+
+        window.addEventListener('resize', function () {
+            map.invalidateSize();
         });
     });
 </script>
